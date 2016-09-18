@@ -1,0 +1,1298 @@
+%
+% Sample SBC book chapter
+%
+% This is a public-domain file.
+%
+% Charset: ISO8859-1 (latin-1) 
+%
+\documentclass{sample-bookchapter}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{graphicx}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\usepackage{color}
+\usepackage{url}
+%\usepackage{listing}
+\usepackage{listings}
+\hyphenation{ba-na-na}
+
+\author{Jo\~{a}o Paulo Fernandes Ventura \footnote{Este trabalho foi parcialmente financiado pelo CNPq} , Ricardo Dahab \footnote{Este trabalho foi parcialmente financiado pela FAPESP e pelo CNPq}}
+\title{Introdu\c{c}\~{a}o a Ataques por Canais Secund\'{a}rios}
+
+\begin{document}
+\maketitle\
+
+\begin{abstract}
+Embedded electronic devices capable of communicating usually implement secure
+cryptographic algorithms and schemes, such as RSA, ECDSA, DSA, and AES. However, these
+hardware devices may reveal compromising information about the key, allowing
+an adversary to compromise the security of such devices. This quite new attack method is called
+Side-Channel Attack and this work intends to study its state of art and to propose preventive actions against it.
+\end{abstract}
+
+\begin{resumo}
+\begin{otherlanguage}{brazil}
+ Dispositivos eletr\^{o}nicos embarcados capazes de comunicarem-se usualmente
+ implementam algoritmos e esquemas criptogr\'{a}ficos como RSA, ECDSA, DSA e AES.
+ Contudo, esses dispositivos pode revelar informa\c{c}\~{o}es
+ sens\'{i}veis sobre chaves criptogr\'{a}ficas, permitindo que um advers\'{a}rio comprometa
+ a seguran\c{c}a desses aparelhos. Esse método de ataque relativamente novo é denominado
+ Ataque por Canais Secundários (ou também Ataque por Canais Colaterais) e o objetivo desse trabalho
+ é fazer uma breve  introdu\c{c}\~{a}o desse modelo e propor medidas preventivas contra o mesmo.
+\end{otherlanguage}
+\end{resumo}
+
+\section{Introdu\c{c}\~{a}o}\label{Introducao}
+
+Os modelos atuais de comunica\c{c}\~{a}o consistem na crescente troca de informa\c{c}\~{o}es processadas digitalmente atrav\'{e}s de canais inseguros (Figura~\ref{fig:Fig_insecure_channel}). Portanto, fica a cargo das entidades envolvidas garantirem a privacidade, integridade e autenticidade tanto dos dados como tamb\'{e}m das pr\'{o}prias entidades. O provimento de tais requisitos de segurança é comumente obtido com o uso de técnicas criptográficas.
+
+%, sendo essa a raz\~{a}o do surgimento da criptografia moderna.
+
+\begin{figure}[ht]
+	\centering
+ 	\includegraphics[width=.6\textwidth]{insecure_channel2.jpg}
+	\caption{Entidades Alice e Bob se comunicam atrav\'{e}s de um canal inseguro enquanto advers\'{a}rio Eve tenta obter acesso a mensagem.}
+	\label{fig:Fig_insecure_channel}
+\end{figure}
+
+As primeiras técnicas modernas implementadas são os chamados modelos criptogr\'{a}ficos sim\'{e}tricos, os quais utilizam algoritmos como TEA, DES, Triple DES e AES \cite{2401855}. Apesar das implementa\c{c}\~{o}es de tais algoritmos serem muito eficientes, tanto em \textit{hardware} quanto em \textit{software}, sua principal desvantagem advém do fato das entidades comunicantes necessitarem previamente estabelecer atrav\'{e}s de um canal seguro a chave secreta a ser utilizada (Figura~\ref{fig:Fig_simetrico_assimetrico}(a)).
+
+Os algoritmos criptogr\'{a}ficos assim\'{e}tricos como DL \cite{DL01}, RSA  \cite{RSA}, DSA \cite{19480}, ECC  \cite{66883, 704566}, etc.) foram criados com o intuito de eliminar o entrave do acordo de chaves (Figura~\ref{fig:Fig_simetrico_assimetrico}(b)). Entretanto, devido à maior complexidade dos c\'{a}lculos efetuados e do maior número de bits necess\'{a}rios para compor as chaves, esses protocolos s\~{a}o muito menos eficientes do que os sim\'{e}tricos.
+
+Em ambos os casos, a segurança do método baseia-se na premissa de que a chave utilizada, seja a chave secreta no modelo simétrico, seja na chave privada no modelo assimétrico, não pode ser obtida observando-se somente informações públicas ou obtidas do canal inseguro. Do ponto de vista de tal premissa baseiam-se as seguintes hipóteses:
+
+\begin{enumerate}
+	\item \textit{Intratabilidade computacional:} a quantidade de tempo e recursos computacionais necessários para quebrar um esquema criptográfico é tão grande que torna proibitiva qualquer tentativa. O crescente poder de processamento dos computadores \'{e} o maior inimigo dessa premissa, for\c{c}ando a adoção de chaves com comprimentos cada vez maiores.
+	\item \textit{Aus\^{e}ncia de falhas na especifica\c{c}\~{a}o:} ainda que a obten\c{c}\~{a}o da chave atrav\'{e}s de ataques por for\c{c}a bruta seja invi\'{a}vel, o esquema criptogr\'{a}fico n\~{a}o deve possuir falhas que viabilizem a descoberta da chave secreta. Isso pode ser garantido utilizando m\'{e}todos formais de verifica\c{c}\~{a}o, como o espa\c{c}o de fitas.
+\end{enumerate}
+
+\subsection*{Motiva\c{c}\~{a}o}\label{teste}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{cards.jpg}
+	\caption{Smart card, SIM card e sensor RFID.}
+	\label{fig:Fig_cards}
+\end{figure}
+
+Ainda que as duas hipóteses anteriores sejam válidas, n\~{a}o existem garantias plenas de que a implementa\c{c}\~{a}o de um m\'{e}todo criptogr\'{a}fico seja segura. Informa\c{c}\~{o}es sens\'{i}veis podem vazar atrav\'{e}s de canais secund\'{a}rios tais como medição do consumo de pot\^{e}ncia, emana\c{c}\~{o}es eletromagn\'{e}ticas, etc, n\~{a}o previstos durante a implementa\c{c}\~{a}o. Isso \'{e} ainda mais dram\'{a}tico em dispositivos eletr\^{o}nicos embarcados, como \textit{smart cards}, SIM Cards e sensores RFID porque a natureza exposta de seus circuitos os torna muito mais vulner\'{a}veis a esse tipo de vazamentos. A coleta e an\'{a}lise dessas informa\c{c}\~{o}es podem viabilizar um ataque contra o m\'{e}todo criptogr\'{a}fico; esse novo modelo de ataque é denominado Ataque por Canais Secund\'{a}rios ou Ataques por Canais Concorrentes.
+
+A proposta desse trabalho \'{e} fazer uma breve introdu\c{c}\~{a}o a esse modelo de ataque, com foco em dispositivos embarcados.
+
+\subsection*{Organiza\c{c}\~{a}o deste documento}
+
+Além desta, compõem este documento as seguintes seções:
+
+\begin{itemize}
+    \item[] \textbf{~\ref{Esquemas}. Esquemas criptográficos de interesse:} apresentação de conceitos matemáticos básicos e alguns esquemas criptográficos utilizados nas seções seguintes.
+    \item[] \textbf{~\ref{Tipificacao}. Tipifica\c{c}\~{a}o dos ataques:}  categorização dos ataques de acordo com a grandeza física que pode fornecer informações sensíveis sobre a chave de um esquema criptográfico.
+    \item[] \textbf{~\ref{Exemplos}. Exempos de ataques por canais secund\'{a}rios:} apresentação de ataques e soluções possíveis soluções.
+    \item[] \textbf{~\ref{Consideracoes}. Considera\c{c}\~{o}es finais:} discussão sobre todos os resultados apresentados e trabalhos futuros.
+\end{itemize}
+
+%\newpage
+\section{Esquemas criptogr\'{a}ficos de interesse}\label{Esquemas}
+
+Nesta seção, inicialmente será apresentado o conceito da teoria dos números, com o objetivo de embasar a descrição algoritmos simétricos e assimétricos. Ainda que esses algoritmos sejam vastamente conhecidos pela comunidade, é necessário que o leitor tenha conhecimento de certas partes fundamentais, uma vez que são elas que viabilizam os ataques.
+
+\subsection{Conceitos básicos da algebra e Teoria dos N\'{u}meros}
+
+\subsubsection*{Grupos e Corpos Finitos}
+
+Seja $\mathbb{S}$ um conjunto e $\diamond$ uma opera\c{c}\~{a}o qualquer sobre elementos desse conjunto. O par $(\mathbb{S}, \diamond)$ é um se obedecerem as seguintes propriedades:
+\begin{enumerate}
+    \item \textit{Fechamento}          : $\forall a, b \in \mathbb{S} , a \diamond b \in \mathbb{S}$.
+    \item \textit{Comutatividade} : $\forall a, b \in S, a \diamond b = b \diamond a$.
+    \item \textit{Associatividade}: $\forall a, b, c \in S, (a \diamond b) \diamond c = a \diamond (b \diamond c)$.
+    \item \textit{Existência de elemento neutro}: $\exists n \in \mathbb{S}\ \vert\ \forall a \in \mathbb{S}, a \diamond n = n \diamond a = a.$
+    \item \textit{Existência de inverso}        : $\forall a \in \mathbb{S}, \exists i \in \mathbb{S}\ \vert\ a \diamond i = i \diamond a = n$, onde $n$ \'{e} o elemento neutro.
+\end{enumerate}
+
+Um grupo é finito se $\mathbb{S}$ é um conjunto finito. Nesse caso, a \textit{ordem} de um elemento $a \in \mathbb{S}$ é o menor inteiro $t$ tal que:
+\begin{equation}
+	a \diamond a \diamond\  ....  \diamond a = n\notag 
+\end{equation}
+
+       Desse modo definimos um \textit{corpo} como um conjunto $\mathbb{F}$ munido de duas opera\c{c}\~{o}es, adi\c{c}\~{a}o (denotada por $+$) e multiplica\c{c}\~{a}o (denotada por $\cdot$) tais que:
+\begin{enumerate}
+	\item $(\mathbb{F}, +)$ formam um grupo abeliano com elemento neutro denotado por $0$.
+	\item $(\mathbb{F} \setminus \left\lbrace 0 \right\rbrace, \cdot)$ formam um grupo abeliano com elemento neutro denotado por $1$.
+	\item $\forall a, b, c \in \mathbb{F} : (a + b) \cdot c = a \cdot c + b \cdot c$.
+\end{enumerate}
+
+		Um corpo é finito quando $\mathbb{F}$ é finito e quando esse for o caso, definimos a \textit{ordem do corpo finito} como $\vert \mathbb{F} \vert = q$. Existe apenas um corpo finito $\mathbb{F}$ de ordem $q$ se e somente se $q = p^{m}$ , sendo $p$ um n\'{u}mero primo denominado caracter\'{i}stica de $\mathbb{F}$. Dois corpos finitos de mesma ordem são iguais, a menos de um isomorfismo entre seus elementos. Assim denotamos o \textit{corpo finito} com $p^{m}$ elementos por $\mathbb{F}_{p^{m}}$.
+		
+        Um corpo \'{e} dito \textit{primo} se $m = 1$. Um corpo primo de ordem $q$ pode ser definido tomando-se $\mathbb{F}_{q} = \mathbb{Z}_{q} = \left\lbrace 0,1,2,... q-1 \right\rbrace$ e as operações de soma e multiplicação usuais de \textit{módulo} $q$, isto é,  $(a + b) = (a+b)\bmod q$ e $(a \cdot b) = (a \cdot b)\bmod q$ onde $x \bmod p$ é o resto da divisão de $x$ por $q$. Já corpos primos de ordem $q = 2^{m}$ são denominados \textit{corpos binários}. Seus elementos são polinômios com coeficientes em $\left\lbrace 0,1 \right\rbrace$ e grau máximo igual a $m-1$:
+	
+\begin{equation}\notag
+	F_{2^{m}} = \left\lbrace \sum_{i=0}^{m-1} a_{i}x_{i}: a_{i} \in \left\lbrace 0, 1\right\rbrace \right\rbrace
+\end{equation}
+
+        Neste caso, para $a,b \in \mathbb{F}_{2^{m}}$, definimos $a+b$ e $a \cdot b$ módulo um polinômio irredutível $f(x)$ de grau $m$. Elementos de $\mathbb{F}_{2^{m}}$ podem ser representados como cadeias de $m$ bits como mostra a Tabela 1.1.
+
+
+\begin{center}
+    \begin{tabular}{||c|c||c|c||c|c||c|c||}
+	    \hline
+	    	$0$     & $0000$ & $x^{2}$         & $0010$ & $x^{3}$         & $0100$ & $x^{3} + x^{2}$         & $1100$\\
+	    \hline
+	    	$1$     & $0001$ & $x^{2} + 1$     & $0011$ & $x^{3} + 1$     & $0101$ & $x^{3} + x^{2} + 1$     & $1101$\\
+	    \hline
+	    	$x$     & $0010$ & $x^{2} + x$     & $0011$ & $x^{3} + x$     & $0110$ & $x^{3} + x^{2} + x$     & $1110$\\
+	    \hline
+	    	$x + 1$ & $0011$ & $x^{2} + x+ 1$  & $0011$ & $x^{3} + x + 1$ & $0111$ & $x^{3} + x^{2} + x + 1$ & $1111$\\
+	    \hline
+    \end{tabular}
+	
+    Tabela 1.1. Elementos de $\mathbb{F}_{2^{4}}$ com polin\^{o}mio irredut\'{i}vel $f(x) = x^{4} + x + 1$.
+\end{center}
+
+%Tomando $\mathbb{F}_{p}^{*} = \left\lbrace b^{i} : 0 \leqslant i \leqslant q-2 \right\rbrace$, definimos como ordem de um elemento $a \in \mathbb{F}_{p}^{*}$ o menor inteiro positivo $t$ tal que $a^{t} \equiv 1 \pmod p$. Se $t = q -1$, então dizemos que $a$ é um gerador de $\mathbb{F}_{p}^{*}$ pois ao calculamos todos os produtos até atingirmos a congruência acima, geramos todos os elementos que compõem $\mathbb{F}_{p}^{*}$
+
+\subsubsection*{Algoritmo Estendido de Euclides}
+
+Sejam $a$ e $n$ números naturais com $n > 0$ e $n > a$, o maior divisor comum $d$ de $a$ e $n$ pode ser facilmente obtido utilizando o algoritmo de euclides que usa a seguinte propriedade indutiva:
+
+\begin{equation}
+	d = mdc(a,n) = mdc(n, a \bmod n) \notag
+\end{equation}
+
+O algoritmo de euclides pode ser estendido de forma a calcular $x,y \in \mathbb{Z}$ tais que $d = ax + by$ (Algoritmo 1.1). Supondo $d = mdc(a,n) = 1$, ao final da execu\c{c}\~{a}o do algoritmo teríamos:
+\begin{equation} ax + ny = 1\notag \end{equation}
+
+Portanto $ax = 1 - xy$, ou $(a \cdot x) \bmod n = 1$, o que implica que $x$ é o inverso multiplicativo de $a$. Denotamos esse inverso por $a^{-1} \bmod n$. Dessa forma, o Algoritmo Estendido de Euclides é uma forma de determinar inversos multiplicativos em grupos abelianos multiplicativos. 
+
+No restante desse texto usaremos a seguinte notação:
+$Z_{n} = \left\lbrace 0,1,2, ..., n-1\right\rbrace$ e $Z_{n}^{*} = \left\lbrace 1,2, ..., n-1\right\rbrace$, para $n$ um inteiro positivo.
+
+Também, quando $a \bmod n = b \mod n$, para $a$ e $b$ inteiros quaisquer e $n$ um inteiro positivo, escrevemos $a \equiv b \pmod n$ e dizemos que \textit{$a$ e $b$ são congruentes módulo $n$}.
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.1.} Algoritmo Estendido de Euclides\\
+		\hline
+			\textbf{Entrada:} inteiros positivos $a$ e $n$ tal que $a \leqslant n$\\
+			\textbf{Saída:} $d = mdc(a,n)$ e inteiros $x,y$ tais que $ax + ny = d$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. $u \leftarrow a$, $v \leftarrow n$\\
+			02. $x_{1} \leftarrow 1$, $y_{1} \leftarrow 1$\\
+			03. Enquanto $u \neq 0$ faça\\
+            04. \ \ \ \ $q \leftarrow \left\lfloor \dfrac{v}{u} \right\rfloor$, $r \leftarrow v - qu$, $x \leftarrow x_{2} - qx_{1}$, $y \leftarrow y_{2} - qy_{1}$\\
+            05. \ \ \ \ $d \leftarrow v$, $v \leftarrow x_{2}$, $y \leftarrow y_{2}$\\
+            06. Retorne $(d,x,y)$\\
+		\hline
+
+	\end{tabular}
+\end{center}
+
+\subsubsection*{Teorema chin\^{e}s do resto}
+
+Seja $M = \prod_{i=1}^{r} m_{i}$, onde $\left\lbrace m_{1}, m_{2}, ..., m_{i}, m_{i+1}, ..., m_{r}\right\rbrace$ onde cada $m_{i}$ é um inteiro positivo e $mdc(m_{i}, m_{j}) = 1$.  Suponha o sistema:
+\begin{align} \notag
+	x &\equiv a_{1}\pmod {m_{1}}\\ \notag
+	x &\equiv a_{2}\pmod {m_{2}}\\ \notag
+	&...\\ \notag
+	x &\equiv a_{r}\pmod {m_{r}} \notag
+\end{align}
+
+O \textit{Teorema Chinês do Resto} (\textit{Chinese Remainder Theorem} ou CRT) fornece uma solu\c{c}\~{a}o \'{u}nica para esse sistema dada por:
+\begin{equation}
+	x = \sum_{i = 1}^{r} a_{i}M_{i}y_{i} \bmod M,\ M_{i} = \frac{M}{m_{i}}\ e\ y_{i} = M_{i}^{-1} \bmod m_{i} \notag
+\end{equation}
+
+Opera\c{c}\~{o}es aritméticas com n\'{u}meros extensos requerem um grande tempo de processamento, sendo uma das mais caras a exponencia\c{c}\~{a}o modular. O Teorema Chin\^{e}s do Resto é um m\'{e}todo que permite que $x \bmod M$, para $M = \prod_{i = 0}^{r} m_{i}$, possa ser calculado a partir do cálculo de $x \bmod m_{1}, ..., x \bmod m_{r}$  que são quantidas bem menores, possibilitando uma redução do custo de processamento.
+
+\subsection{Sistemas sim\'{e}tricos}
+
+\subsubsection*{Fundamentos}
+Em esquemas criptogr\'{a}ficos de chaves sim\'{e}tricas as entidades envolvidas na comunica\c{c}\~{a}o primeiramente entram em acordo de que a chave utilizada \'{e} secreta e aut\^{e}ntica e s\'{o} ent\~{a}o realizar a comunica\c{c}\~{a}o atrav\'{e}s do canal inseguro. \cite{940321}. Exemplos de sistemas sim\'{e}tricos s\~{a}o o DES (\textit{Data Encryption Algorithm}), o TripleDES e o AES  (\textit{Advanced Encryption Standard}) \cite{560131}. 
+
+\begin{figure}[ht]
+	\centering
+ 	\includegraphics[width=1\textwidth]{simetrico_assimetrico.jpg}
+	\caption{Criptografia sim\'{e}trica versus criptografia assim\'{e}trica. \cite{940321}}
+	\label{fig:Fig_simetrico_assimetrico}
+\end{figure}
+
+Apesar de implementa\c{c}\~{o}es tanto em \textit{hardware} como em \textit{software} serem extremamente eficientes, existem dois inconvenientes nesse esquema criptogr\'{a}fico:
+
+\begin{itemize}
+	\item \textbf{Distribui\c{c}\~{a}o das chaves: } o acordo da chave secreta deve ser feito atrav\'{e}s de um canal secreto e autenticado.  Isso pode ser feito fisicamente (atrav\'{e}s de um entregador confi\'{a}vel). Outra maneira \'{e} utilizar uma TTP (\textit{Third Trustable Party} ou Terceira Parte Confi\'{a}vel)  que inicialmente estabelece um acordo de chaves com todas as entidades comunicantes e distribui outras chaves entre elas conforme a necessidade.
+	\item \textbf{Gerenciamento das chaves: } em um sistema com $N$ entidades, cada uma delas precisaria armazenar $N-1$ chaves secretas. Ainda que seja utilizado a TTB para fazer requisi\c{c}\~{a}o de chaves sob demanda, ela se tornaria um gargalo na comunica\c{c}\~{a}o \cite{940321}.
+\end{itemize}
+
+\subsubsection*{AES: Advanced Encryption Standard}
+
+Um dos primeiros esquemas sim\'{e}tricos de criptografia criados foi o DES (\textit{Data Encryption Standard}) pela IBM em 1973 a pedido do \textit{National Bureau of Standads} (atualmente conhecido como \textit{National Institute of Standards and Technology}). Ele foi um dos padr\~{o}es mais utilizados na hist\'{o}ria. Com o crescimento da capacidade computacional desde sua cria\c{c}\~{a}o, em 1997 um cons\'{o}rcio mostrou ser vi\'{a}vel quebrar o DES e portanto o NIST lan\c{c}ou um processo de sele\c{c}\~{a}o de algoritmos para substitui-lo. 
+O algoritmo vencedor do concurso foi criado por Vincent Rijmen e Joan Daemen e denominado Rijndael. Originalmente o Rindael suportava mensagens composta por blocos de 128, 160, 192, 224 e 256 bits utilizando chaves de 128, 160, 192, 224 ou 256 bits. Por\'{e}m a vers\~{a}o sob o nome de AES suporta apenas blocos de 128 bits cifrados com chaves de 128, 192 ou 256 bits. 
+
+\begin{figure}[ht]
+	\centering
+ 	\includegraphics[width=.6\textwidth]{aes.jpg}
+	\caption {\textit{Advanced Encryption Standard} \cite{560131}.}
+	\label{fig:Fig_aes}
+\end{figure}
+
+No AES a unidade de encriptação das mensagens s\~{a}o blocos de 128 bits, que podem ser visualizados como uma matriz $4 \times 4$ com termos de 1 \textit{byte}. Como as opera\c{c}\~{o}es s\~{a}o feitas \textit{byte-a-byte} e cada \textit{byte} possui 8 bits, as opera\c{c}\~{o}es podem ser entendidas como operações sobre corpos finitos bin\'{a}rios da forma $F_{2^{8}}$. O processo de encriptação consiste em realizar \textit{rounds} (ou rodadas) de transforma\c{c}\~{o}es repetidamente e os resultados intermedi\'{a}rios da encriptação s\~{a}o armazenados em uma matriz $4\times4$ denominada $State$. Como mostra a Figura~\ref{fig:Fig_aes}, as etapas que podem compor uma rodada s\~{a}o:
+
+\begin{enumerate}
+    \item \textbf{\textit{AddRoundKey:}} nesse passo a subchave \'{e} combinada com a matriz de estados. Em cada rodada, uma nova subchave \'{e} derivada a partir da chave principal utilizando o algoritmo de escalonamento de chaves do AES, sendo que as subchaves possuem o mesmo tamanho da matriz de estados. A opera\c{c}\~{a}o de adi\c{c}\~{a}o consiste em realizar um \textit{ou-exclusivo} de cada um dos bits que comp\~{o}em as matrizes (Figura~\ref{fig:Fig_aes_addroundkey}).
+	\begin{figure}[ht]
+		\centering
+	 	\includegraphics[width=.85\textwidth]{aes_addroundkey.jpg}
+		\caption{\textit{AddRoundKeys} \cite{560131}.}
+		\label{fig:Fig_aes_addroundkey}
+	\end{figure}
+
+    \item \textbf{\textit{SubBytes:}} cada \textit{byte} do vetor \'{e} atualizado utilizando uma de matriz de substitui\c{c}\~{a}o com termos de 8 bits denominada S-BOX. \'{E} essa matriz \'{e} o que garante parte da aleatoriedade do encriptador. A S-BOX \'{e} gerada a partir dos inversos multiplicativos sobre $F_{2^{8}}$ (Figura~\ref{fig:Fig_aes_subbytes}).
+	\begin{figure}[ht]
+		\centering
+	 	\includegraphics[width=.85\textwidth]{aes_subbytes.jpg}
+		\caption{\textit{SubBytes} \cite{560131}.}
+		\label{fig:Fig_aes_subbytes}
+	\end{figure}
+	
+	\item \textbf{\textit{ShiftsRows}}: nesse est\'{a}gio as linhas s\~{a}o rotacionadas de um certo n\'{u}mero $i$ de termos \`{a} esquerda, sendo $i$ o \'{i}ndice da linha da matriz. Logo, enquanto a primeira linha ($i = 0$) n\~{a}o sofre rota\c{c}\~{a}o, a quarta linha  ($i = 3$) \'{e} rotacionada de tr\^{e}s termos (Figura~\ref{fig:Fig_aes_shiftrows}).
+	\begin{figure}[ht]
+		\centering
+	 	\includegraphics[width=.85\textwidth]{aes_shiftrows.jpg}
+		\caption{\textit{ShiftRows} \cite{560131}.}
+		\label{fig:Fig_aes_shiftrows}
+	\end{figure}
+	
+    \item \textbf{\textit{MixColumns:}} nesse est\'{a}gio, as colunas da matriz $State$ s\~{a}o interpretadas como elementos de $F_{2^{8}}(x)$, sendo $f(x)=x^{4}+1$ o polin\^{o}mio irredut\'{i}vel utilizado. Cada coluna \'{e} multiplicada por $c(x)=(03,01,01,02) \in F_{2^{8}}(x)$. Essa opera\c{c}\~{a}o pode ser visualizada como uma multiplica\c{c}\~{a}o de matrizes (Figura~\ref{fig:Fig_aes_mixcolumns}).
+	\begin{figure}[ht]
+		\centering
+	 	\includegraphics[width=.85\textwidth]{aes_mixcolumns.jpg}
+		\caption{\textit{MixColumns} \cite{560131}.}
+		\label{fig:Fig_aes_mixcolumns}
+	\end{figure}
+	
+\end{enumerate}
+
+\subsection{Sistemas assim\'{e}tricos}
+
+Sistemas assim\'{e}tricos, ou sistemas de chaves p\'{u}blicas, foram inicialmente propostos \cite{DiffieHellman} para solucionar as quest\~{o}es da distribui\c{c}\~{a}o e gerenciamento das chaves secretas na criptografia sim\'{e}trica. Nesse esquema criptogr\'{a}fico, as entidades n\~{a}o precisam garantir o sigilo das chaves de encriptação mas apenas sua autenticidade. Cada entidade deve escolher um par $(e,d)$, correspondendo respectivamente a \textit{chave p\'{u}blica} (para encriptar) e a chave privada (para decriptar), sendo computacional invi\'{a}vel descobrir a chave privada partindo apenas da chave p\'{u}blica. Esses sistemas tamb\'{e}m precisam prover mecanismos para garantir o sigilo das mensagens, o n\~{a}o rep\'{u}dio das entidades e a autencididade de mensagens e entidades \cite{2401855, 940321}.
+
+Apesar de resolver os inconvenientes de sistemas sim\'{e}tricos, sistemas de chave p\'{u}blica s\~{a}o substancialmente mais lentos. Por isso, a prática é a utilização de sistemas h\'{i}bridos, nos quais utiliza-se o sistema assim\'{e}trico apenas para estabelecer  chaves para serem utilizadas em sistemas sim\'{e}tricos.
+
+\subsubsection{Sistemas RSA}
+
+Os Algoritmos 1.2, 1.3 e 1.4 descrevem os procedimentos para geração de chaves, encriptação e decriptação, respectivamente, do RSA. A notação $a \in_{R} [x,y]$ significa escolher um número $a$ aleatoriamente dentro do intervalo $[x,y]$. 
+
+É importante notar que todas as operações descritas nesses algoritmos podem ser implementadas eficientemente. Em particular, o cálculo da chave privada $d$ no passo 04 do Algoritmo 1.2 é feito com o Algoritmo Estendido de Euclides.
+
+A robustez criptográfica do RSA vem da dificuldade reconhecida do problema da fatoração de inteiros grandes, no caso o inteiro $n$, e da também reconhecida dificuldade de inversão da função de encriptação:
+\begin{equation}
+	m^{d} \bmod n\notag
+\end{equation}
+
+\noindent sem o conhecimento da chave privada $d$.
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.2.} Geração do par de chaves do RSA\label{TESTE}\\
+		\hline
+			\textbf{Entrada:} parâmetro seguro $l$\\
+			\textbf{Saída:} chave pública $(e,n)$ e chave privada $(d)$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Escolher aleatóriamente dois primos $p$ e $q$ de $\frac{l}{2}$ \textit{bits de comprimento}.\\
+			02. Calcular $n \leftarrow pq$ e $\phi(n) \leftarrow (p-1)(q-1)$\\
+			03. Escolher $e \in_{R} [1, \phi(n)]$ tal que $mdc(e, \phi(n)) = 1$\\
+			04. Calcular um inteiro $d$ tal que $d \in [1, \phi(n)]$ e $ed \equiv 1 \pmod \phi(n)$\\
+		\hline
+
+	\end{tabular}
+\end{center}
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.3.} Encriptação básica do RSA\\
+		\hline
+			\textbf{Entrada:} chave pública $(e,n)$ e texti claro $m \in [0, n-1]$\\
+			\textbf{Saída:} texto encriptado $c$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $c \leftarrow m^{e} \bmod n$.\\
+			02. Retornar $c$\\
+		\hline
+
+	\end{tabular}
+\end{center}
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.4.} Decriptação básica do RSA\\
+		\hline
+			\textbf{Entrada:} chave pública $(e,n)$, chave privada $d$, texto encriptado $c$\\
+			\textbf{Saída:} texto claro $m$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $m \leftarrow c^{d} \bmod n$.\\
+			02. Retornar $m$\\
+		\hline
+
+	\end{tabular}
+\end{center}
+
+Para assinar uma mensagem usando o RSA, procede-se como descrito no Algoritmo 1.5, onde $h$ é uma função de resumo criptográfico (\textit{hash function}). O leitor interessado pode encontrar maiores detalhes em \cite{2401855}.
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.5.} Assinatura básica do RSA\\
+		\hline
+			\textbf{Entrada:} chave pública $(e,n)$, chave privada $d$, texto claro $m$\\
+			\textbf{Saída:} assinatura de $m$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $s \leftarrow h(m)^{d} \bmod n$, onde $h(m)$ é o resumo da mensagem $m$.\\
+			02. Retornar $s$\\
+		\hline
+
+	\end{tabular}
+\end{center}
+
+\subsubsection{Sistemas baseados em curvas el\'{i}pticas}
+
+\subsubsection*{Fundamentos alg\'{e}bricos}
+Uma curva elíptica $E$ sobre um corpo $\mathbb{F}$ \'{e} definida pela seguinte equa\c{c}\~{a}o, chamada de equação de Weierstrass como \cite{940321}:
+\begin{align}\notag
+	E: y^{2} + a_{1}xy + a_{3}y = x^{3} + a_{2}x^{2} + a_{4}x + a_{6}
+\end{align}
+
+\noindent onde $a_{1}, a_{2}, a_{3},a_{4}, a_{6} \in \mathbb{F}$ e o discriminante $\Delta \neq 0$, onde
+\begin{align}\notag
+    \Delta &= -d_{2}^{2}d_{8} -8d_{4}^{3} - 27d_{6}^{2} + 9d_{2}d_{4}d_{6},\ e\\ \notag
+    d_{2} &= a_{1}^{2} + 4a_{2},\\ \notag
+    d_{4} &= 2a_{4} + a_{1}a_{3},\\ \notag
+    d_{6} &= a_{3}^{2} + 4a_{6},\\ \notag
+    d_{8} &= a_{1}^{2}a_{6} + 4a_{2}a_{6} - a_{1}a_{3}a_{4} + a_{2}a_{3}^{2} - a_{4}^{2}.\notag
+\end{align}
+
+Os pontos em $E$ de interesse para nós serão os definidos pelo conjunto $E(\mathbb{F})$, a saber
+\begin{equation}
+	E(\mathbb{F}) = \left\lbrace  (x, y) \in \mathbb{F} \times \mathbb{F} : a_{1}xy + a_{3}y - x^{3} - a_{2}x^{2} - a_{4}x - a_{6} = 0 \right\rbrace  \cup \left\lbrace  \infty \right\rbrace
+\end{equation}
+
+\noindent onde $\infty$ é o ponto no infinito. A Figura~\ref{fig:Fig_ecc_sobre_reais} mostra duas curvas el\'{i}pticas $E_{1}$ e $E_{2}$ definidas sobre o corpo $\mathbb{R}$.
+
+Neste texto, nosso interesse é em curvas elípticas sobre corpos finitos. É sabido que os pontos do conjunto $E(\mathbb{F})$ formam um grupo com uma operação de adição bastante peculiar cuja definição precisa não é do escopo desse texto. Para todos os efeitos, nos limitamos a denotá-la por $+$; conseqüentemente denotaremos a soma de $k$ parcelas do ponto $P$ por $kP$. No restante do texto, usaremos a expressão \textit{curva elíptica $E(\mathbb{F})$} significando o conjunto definido na equação (1).
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{ecc_sobre_reais.jpg}
+	\caption{Curvas el\'{i}pticas (a) $E_{1}: y^{2} = x^{3} - x$ e (b) $E_{2}: y^{2} = x^{3} + \frac{1}{4}x + \frac{5}{4}$ \cite{940321}.}
+	\label{fig:Fig_ecc_sobre_reais}
+\end{figure}
+
+\subsubsection*{Esquemas de encripta\c{c}\~{a}o e decripta\c{c}\~{a}o}
+
+Criptografia baseada em curvas el\'{i}pticas foi inicialmente proposta por Miller em 1986 \cite{704566} e Neal Koblitz em 1989 \cite{66883}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.8\textwidth]{ecc_cif.jpg}
+	\caption{Esquema de encriptação baseados em curvas elípticas.}
+	\label{fig:Fig_ecc_cif_sig}
+\end{figure}
+
+Devido a restri\c{c}\~{o}es do poder de processamento e mem\'{o}ria e dispon\'{i}veis, dispositivos embarcados preferencialmente utilizam sistemas ECC. Isso ocorre porque com chaves secretas de poucas centenas de bits \'{e} poss\'{i}vel alcan\c{c}ar os mesmos n\'{i}veis de seguran\c{c}a de um sistema \textit{RSA} de milhares de bits.
+
+Seja uma curva elíptica $E(\mathbb{F})$, $P$ um ponto $P \in E(\mathbb{F})$ de ordem $n$. Para criar sua chave p\'{u}blica, Bob determina um ponto um inteiro $d \in_{R} \left[1, n-1 \right]$ e calcula o produto $Q = dP$. Assim sua chave pública é o ponto $Q$ e $d$ sua chave privada. Para enviar uma mensagem para Bob, Alice deve representar sua mensagem $m$ como um ponto $M \in E(\mathbb{F})$. Em seguida ela escolhe $k \in_{R} \left[1, n-1\right]$ e, utilizando os valores p\'{u}blicos $P$ e $Q$, ela calcula $C_{1} = kP$ e $C_{2} = M + kQ$. A mensagem encriptada corresponde a esse par de pontos $(C_{1}, C_{2})$ (Algoritmo 1.2).
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.2.} Encriptação básica em curvas elípticas\\
+		\hline
+			\textbf{Entrada:} parâmetros públicos $(p, E(\mathbb{F}), P, n)$\\
+			\textbf{Saída:} mensagem encriptada $(C_{1}, C_{2})$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Representar a mensagem $m$ como um ponto $M \in E(\mathbb{F}_{p})$\\
+			02. Escolher $k \in_{R} [1, n-1]$\\
+			03. Calcular $C_{1} \leftarrow kP$\\
+			04. Calcular $C_{2} \leftarrow M + kQ$\\
+			05. Retornar $(C_{1},C_{2})$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+Bob pode facilmente decriptar a mensagem calculando (Algoritmo 1.3):
+\begin{align}\notag
+	M &= C_{2} - dC_{1}\\ \notag
+	\  &= C_{2} - d(kP) = C_{2} - k(dP)\\ \notag
+	\  &= C_{2} - dQ\notag
+\end{align}
+
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.3.} Decriptação básica em curvas elípticas\\
+		\hline
+			\textbf{Entrada:} parâmetros $(p, E(\mathbb{F}), P, n)$, chave privada $d$ e texto encriptado $(C_{1}, C_{2})$\\
+			\textbf{Saída:} texto claro $m$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $M \leftarrow C_{2} - dC_{1}$\\
+			02. Extrair mensagem $m$ a partir de $M$\\
+			03. Retornar $m$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\subsubsection*{Representação dos pontos}
+
+Seja $\mathbb{F}$ um corpo onde cálculo de inversos é computacionalmente mais caro do que a multiplicação. Podemos representar a curva elíptica $E(\mathbb{F})$ no \textit{sistema de coordenadas projetivas}, de modo que a inversão torne-se uma operação mais barata. Sejam $c$ e $d$ inteiros positivos e $\mathbb{F}$ um corpo; podemos definir uma relação de equivalência ($\sim$) sobre o conjunto $\mathbb{F}^{3} \setminus \left\lbrace (0,0,0)\right\rbrace$ de triplas sobre $\mathbb{F}$ como
+\begin{equation}
+	(X_{1},Y_{1},Z_{1}) \sim (X_{2},Y_{2},Z_{2}),\ se X_{1} = \lambda^{c}X_{2},\ Y_{1} = \lambda^{d}Y_{2},\ Z_{1} = \lambda Z_{2}\ para\ algum\ \lambda \in \mathbb{F}^{*}: \notag
+\end{equation}
+
+Assim, a \textit{classe de equivalência} contendo $(X,Y,Z) \in \mathbb{F}^{3} \setminus \left\lbrace (0,0,0)\right\rbrace$ é definida por
+
+\begin{equation}
+	(X:Y:Z) = \left\lbrace (\lambda^{c}X, \lambda^{d}Y, \lambda Z) : \lambda \in \mathbb{F} \right\rbrace,\notag
+\end{equation}
+
+\noindent onde $(X:Y:Z)$ é denominado \textit{ponto projetivo} e $(X,Y,Z)$ é um \textit{representante} de $(X:Y:Z)$.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.8\textwidth]{projective_plane.png}
+	\caption{Plano projetivo \cite{940321}.}
+	\label{fig:Fig_projective_plane}
+\end{figure}
+
+Denotando o conjunto de todos os pontos projetivos de $\mathbb{F}$ por $\mathbb{P(K)}$, podemos verificar que existe uma bijeção entre o conjunto de pontos projetivos
+\begin{equation}
+	\mathbb{P(K)}^{*} = \left\lbrace (X:Y:Z) : X,Y,Z \in \mathbb{F}, Z \neq 0\right\rbrace\notag
+\end{equation}
+
+\noindent e o conjunto de \textit{pontos afins}
+\begin{equation}
+	\mathbb{A(K)} = \left\lbrace (x,y): x,y \in \mathbb{F} \right\rbrace,\notag
+\end{equation}
+
+\noindent sobre o qual a equação de Weierstrass é usualmente definida. O conjunto de pontos projetivos
+\begin{equation}
+	\mathbb{P(K)}^{0} = \left\lbrace (X:Y:Z) : X,Y,Z \in \mathbb{F}, Z = 0\right\rbrace\notag
+\end{equation}
+
+\noindent é denominado \textit{linha no infinito}, sendo que nenhum elemento dos pontos afins é mapeados para esse conjunto. Ilustrando graficamente, vemos na Figura~\ref{fig:Fig_projective_plane} a projeção do plano que contém os pontos de $\mathbb{A(K)}$ sobre o espaço projetivo. Todos os pontos no espaço correspondem a $\mathbb{P(K)}^{*}$, exceto o plano identificado pela circunferência que corresponde ao conjunto $\mathbb{P(K)}^{0}$.
+
+A forma projetiva da equação de Weierstrass pode ser definida substituindo $x$ por $\frac{X}{Z^{c}}$ e $y$ por $\frac{Y}{Z^{d}}$, $Z \neq 0$. O ponto no infinito em $\mathbb{A(K)}$ pode ser conceitualmente interpretado como qualquer reta paralela ao eixo $y$; então, tomando duas dessas retas paralelas, a projeção do ponto no infinito corresponde à intersecção das projeções das retas que pertence ao plano $\mathbb{P(K)}^{0}$.
+
+A equação de Weierstrass pode ser projetada sobre diferentes sistemas de coordenadas projetivas, os quais são classificados de acordo com os valores de $c$ e $d$. Tomando a curva $E(\mathbb{F}_{p^m}): y^{2} = x^{3} + ax +b$, $p \notin \left\lbrace2,3\right\rbrace$, a equação pode ser projetada sobre os seguintes tipos coordenadas projetivas:
+
+\begin{itemize}
+	\item \textit{Coordenadas padrão:} tomando $c=d=1$, os pontos afins correspondem a $(\frac{X}{Z}, \frac{Y}{Z})$ e a equação da curva
+	\begin{equation}
+		Y^{2}Z = X^{3} + aXZ^{2} + bZ^{3}\notag
+	\end{equation}
+	tem como ponto no infinito $(0:1:0)$; assim para P = $(X:Y:Z)$ temos $-P = (X:-Y:Z)$.
+	\item \textit{Coordenadas jacobianas:} tomando $c=2$ e $d=3$, os pontos afins correspondem a $(\frac{X}{Z^{2}}, \frac{Y}{Z^{3}})$ e a equação da curva
+	\begin{equation}
+		Y^{2} = X^{3} + aXZ^{4} + bZ^{6}\notag
+	\end{equation}
+	tem como ponto no infinito $(1:1:0)$; assim para P = $(X:Y:Z)$ temos $-P = (X:-Y:Z)$.
+\end{itemize}
+
+Outros sistemas de coordenadas não serão apresentados, uma vez que os ataques neste texto utilizam apenas coordenadas padrão e jacobianas. O leitor interessado pode encontrar maiores detalhes em \cite{940321}.
+
+\subsubsection*{Forma n\~{a}o-adjacente}
+
+Seja $k$ um n\'{u}mero inteiro representado por $n$ bits. Pode-se representar $k$ usando uma forma alternativa, $NAF(k) = (k_{l-1}', k_{l-2}', ..., k_{1}', k_{0}')$, com as seguintes propriedades:
+\begin{enumerate}
+	\item $k_{i}' \in \left\lbrace -1, 0, 1 \right\rbrace$.
+	\item Não existem $k_{i}'$ e $k_{i+1}'$, ambos não nulos na representação $NAF(k)$.
+	\item O valor de $k$ é dado por:
+		\begin{equation}
+		k = \sum_{i = 0}^{l-1}k_{i}'\notag	
+		\end{equation}
+\end{enumerate}
+
+As propriedades de $NAF(k)$ são as seguintes:
+\begin{enumerate}
+	\item $NAF(k)$ \'{e} \'{u}nica.
+	\item $NAF(k)$ tem a menor quantidade poss\'{i}vel de d\'{i}gitos n\~{a}o nulos.
+	\item $n \leqslant l \leqslant n + 1$.
+	\item $\frac{2^{l}}{3} < k < \frac{2^{l+1}}{3}$
+	\item $NAF(k)$ possui aproximadamente $\frac{2l}{3}$ de d\'{i}gitos nulos
+\end{enumerate}
+
+Como exemplo, o n\'{u}mero $118_{10}$ (sistema decimal) equivaleria a $0111\ 0110_{2}$ e a $1000\ \bar{1}0\bar{1}0_{NAF_{2}}$, sendo $\bar{1} = -1$. Essa representa\c{c}\~{a}o \'{e} utilizada para acelerar algoritmos de multiplica\c{c}\~{a}o de pontos em curvas el\'{i}pticas porque como a quantidade de dígitos nulos \'{e} muito maior em $NAF(k)$ do que na representação usual, uma menor quantidade de somas s\~{a}o realizadas.
+
+\section{Tipifica\c{c}\~{a}o dos ataques}\label{Tipificacao}
+
+Inicialmente ser\~{a}o apresentados canais n\~{a}o previstos pelos quais informa\c{c}\~{o}es sens\'{i}veis sobre a chave secreta podem ser obtidas. Em seguida ser\~{a}o apresentados alguns ataques e suas respectivas contra-medidas.
+
+\subsection{An\'{a}lise simples de pot\^{e}ncia}
+
+A tecnologia de semicondutores dominante em microprocessadores, mem\'{o}rias e dispositivos embarcados \'{e} a CMOS   \cite{sedra:1997}, sendo inversores l\'{o}gicos sua unidade b\'{a}sica de constru\c{c}\~{a}o. Como dispositivos utilizam fontes constantes de tens\~{a}o, a pot\^{e}ncia consumida varia de acordo com o fluxo de sinais nos componentes, e esses de acordo com as opera\c{c}\~{o}es realizadas. Se esse consumo de pot\^{e}ncia for monitorado com aux\'{i}lio de um oscilosc\'{o}pio poderemos estabelecer um rastro de consumo de potência (\textit{power trace}) a cada ciclo do dispositivo.
+
+Supondo que o advers\'{a}rio saiba qual o algoritmo implementado, ele pode determinar em quais instantes o dispositivo realiza opera\c{c}\~{o}es de matem\'{a}ticas que utilizem a chave secreta (como assinatura digital ou decriptação de mensagens) e, de acordo com o \textit{power trace}, determinar o valor dos bits que formam a chave. Esse modelo de ataque é denominado Análise Simples de Potência (SPA ou \textit{Simple Power Analysis}).
+
+\subsection{An\'{a}lise diferencial de pot\^{e}ncia}
+
+Quando a varia\c{c}\~{a}o do consumo de pot\^{e}ncia n\~{a}o \'{e} sens\'{i}vel o suficiente em rela\c{c}\~{a}o as opera\c{c}\~{o}es executadas por um dispositivo, o advers\'{a}rio pode monitorar como o consumo varia em rela\c{c}\~{a}o ao valor de uma determinada vari\'{a}vel. Nesse ataque, primeiramente detectamos uma vari\'{a}vel $V$, influenciada, durante um processo de decriptação ou assinatura digital, por um texto $m$ e uma por\c{c}\~{a}o desconhecida  da chave privada. A partir disso, definimos a fun\c{c}\~{a}o de sele\c{c}\~{a}o $V = f(k',m)$.
+
+O advers\'{a}rio então coleta milhares de \textit{power traces}, determinando indutivamente todos os bits que comp\~{o}em a chave privada atrav\'{e}s do c\'{a}lculo da derivada dessa fun\c{c}\~{a}o. Para cada bit $k'_{i}$ corretamente previsto obtemos uma derivada n\~{a}o nula para os valores de $k'$ e $m$, caso contr\'{a}rio a derivada \'{e} nula. O processo \'{e} repetido at\'{e} que cada $k'_{i}$ seja determinando \cite{940321}. Esse modelo de ataque é conhecido como Análise Diferencial de Potência (DPA ou \textit{Differential Power Analysis}).
+
+\subsection{An\'{a}lise simples e an\'{a}lise diferencial de campos eletromagn\'{e}ticos}
+
+A passagem de uma corrente el\'{e}trica atrav\'{e}s de qualquer dispositivo eletr\^{o}nico induz um campo magn\'{e}tico ao seu redor. Assim como a pot\^{e}ncia consumida, as emana\c{c}\~{o}es eletromagn\'{e}ticas podem variar em fun\c{c}\~{a}o das instru\c{c}\~{o}es executadas por um algoritmo criptogr\'{a}fico.
+
+An\'{a}lise Simples de Ondas Eletromagn\'{e}ticas (SEMA ou \textit{Simple ElectroMagnetic Analysis}) e An\'{a}lise Diferencial de Ondas Eletromagn\'{e}ticas (DEMA ou \textit{Differential ElectroMagnetic Analysis}) s\~{a}o m\'{e}todos n\~{a}o intrusivos e relativamente baratos de atacar um sistema criptogr\'{a}fico.
+
+Em ataques de consumo de pot\^{e}ncia, o advers\'{a}rio monitora o consumo de pot\^{e}ncia de todo um conjunto de unidades l\'{o}gicas ativas simultaneamente, enquanto em ataques eletromagn\'{e}ticos o advers\'{a}rio recebe os sinais de todos as unidades do mesmo conjunto e precisa separ\'{a}-los antes de an\'{a}lis\'{a}-los. Apesar da dificuldade maior na coleta de dados, uma vez separados, os sinais eletromagn\'{e}citos podem revelar muito mais informa\c{c}\~{o}es da execu\c{c}\~{a}o do esquema criptogr\'{a}fico, tornando EMA muito mais amea\c{c}adora do que SPA e DPA \cite{940321}.
+
+Estudos utilizando EMA \cite{752713} demonstraram ser poss\'{i}vel comprometer a seguran\c{c}a de \textit{smart cards} providos de medidas de prote\c{c}\~{a}o contra ataques SPA/DPA. Mais recentemente Oren e Shamir \cite{1311669} mostraram que sensores RFID (como os utilizados em passaportes digitais) poderiam ter sua segura\c{c}a comprometida em ataques aplicados a uma dist\^{a}ncia de at\'{e} 15 metros.
+
+\subsection{An\'{a}lise de falhas}
+
+Boneh, DeMillo e Lipton \cite{BDL01} apresentaram pela primeira vez ataques em dispositivos explorando falhas na geração das saídas dos programas. Eles mostraram como era possível induzir dispositivos embarcados a gerar saí­das  erradas durante a execução de uma assinatura RSA, e descobrir a chave privada.
+
+A ocorr\^{e}ncia de erros enquanto um dispositivo realiza opera\c{c}\~{o}es  com a chave privada gera mensagens erradas, mas capazes de oferecer informa\c{c}\~{o}es substanciais para um advers\'{a}rio \cite{Boneh01onthe, 940321}.
+
+Esses erros podem ser inerentes aos dispositivos ou induzidos; logo, a implementa\c{c}\~{a}o deve ser tolerante a falhas. Contudo, os dispositivos mais expostos a interfer\^{e}ncias externas s\~{a}o os de menor capacidade de processamento; ent\~{a}o, o desenvolvedor precisa lidar com a dualidade da cria\c{c}\~{a}o de uma implementa\c{c}\~{a}o robusta por\'{e}m eficiente.
+
+\subsection{An\'{a}lise de mensagens de erro}
+
+Durante o processo de encriptação com chaves p\'{u}blicas; por exemplo pelo algoritmo ECIES \cite{940321}, mensagens de erro podem ser geradas porque a entrada n\~{a}o estava no formato adequado. Atrav\'{e}s de medi\c{c}\~{o}es precisas de tempo, o advers\'{a}rio  pode determinar o exato instante da ocorr\^{e}ncia de erros ou mesmo obter acesso ao hist\'{o}rico das ocorr\^{e}ncias de erro.
+
+Essas informa\c{c}\~{o}es podem ser suficientes para o advers\'{a}rio  ser capaz de desvendar a chave privada \cite{940321}.
+
+\subsection{An\'{a}lise de tempo}
+A premissa fundamental de ataques temporais \'{e} que o tempo gasto na execu\c{c}\~{a}o de uma instru\c{c}\~{a}o \'{e} influenciado por seus respectivos operandos \cite{940321}. Estudos mostraram \cite{1251354} a viabilidade desse ataque contra servidores executando protocolos como o SSL com RSA devido à lat\^{e}ncia da comunica\c{c}\~{a}o decorrente da rede local.
+
+\section{Exemplos de ataques}\label{Exemplos}
+
+\subsection{Análise simples de potência sobre ECDSA}
+Uma das rotinas mais executadas em dispositivos que utilizam ECC s\~{a}o os algoritmos de assinatura digital de curvas el\'{i}pticas (\textit{ECDSA} ou \textit{Elliptic Curve Digital Signature Algorithm}), tendo como operação central a multiplicação de um ponto por um escalar (Algoritmo 1.4).
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.4.} Método NAF binário de multiplicação escalar de um ponto\\
+		\hline
+			\textbf{Entrada:} inteiro positivo $k$ e $P \in E(\mathbb{F}_p)$\\
+			\textbf{Saída:} $kP$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $(k_{l-1}, k_{l-2}, ..., k_{1}, k_{0}) \leftarrow NAF(k)$\\
+			02. $Q \leftarrow \infty$\\
+			03. De $i = l-1$ até $0$ faça\\
+			04. \ \ \ \ $Q \leftarrow 2Q$\\
+            05. \ \ \ \ Se $k_{i} = \ \ \ 1$ então $Q \leftarrow Q + P$\\
+            06. \ \ \ \ Se $k_{i} = -1$ então $Q \leftarrow Q - P$\\
+            07. Retorne $Q$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.8\textwidth]{spa1.jpg}
+	\caption{Consumo de pot\^{e}ncia durante cálculo de $kP$ \cite{940321}.}
+	\label{fig:Fig5}
+\end{figure}
+
+O que torna a forma n\~{a}o adjacente de $k$ mais interessante do que sua representa\c{c}\~{a}o bin\'{a}ria \'{e} o fato da $NAF(k)$ possuir apenas $1/3$ de d\'{i}gitos n\~{a}o nulos. Conseq\"{u}entemente uma quantidade muito menor de adi\c{c}\~{o}es (linhas $04$ e $05$ do Algoritmo 1.4) s\~{a}o efetuadas.
+
+Entretanto um advers\'{a}rio que soubesse que o dispositivo implementa um algoritmo \textit{ECDSA} poderia monitorar o consumo de pot\^{e}ncia do dispositivo utilizando um oscilosc\'{o}pio, obtendo o gr\'{a}fico mostrado na Figura~\ref{fig:Fig5}. No Algoritmo 1.4, vemos que adi\c{c}\~{o}es s\~{a}o realizadas apenas quando $k_{i} \neq 0$; logo, uma maior quantidade de pot\^{e}ncia \'{e} despendida para d\'{i}gitos n\~{a}o nulos. Portanto os intervalos curtos denominados $D$ correspondem a itera\c{c}\~{o}es em que $k_{i} = 0$, enquanto intervalos longos denominados $S$ correspondem a itera\c{c}\~{o}es em que $k_{i} \neq 0$. Essa informa\c{c}\~{a}o torna vi\'{a}vel descobrir a chave atrav\'{e}s de ataques por for\c{c}a bruta, pois apenas $1/3$ dos d\'{i}gitos s\~{a}o n\~{a}o nulos.
+
+\subsubsection*{Medidas preventivas contra SPA}
+
+A solu\c{c}\~{a}o mais simples contra SPA consiste em inserir opera\c{c}\~{o}es redundantes no algoritmo de multiplica\c{c}\~{a}o (Algoritmo 1.6), de modo que a seq\"{u}\^{e}ncia de opera\c{c}\~{o}es elementares envolvidas sejam realizadas em igual propor\c{c}\~{a}o. Comparando o novo \textit{power trace} obtido (Figura~\ref{fig:Fig7}) n\~{a}o \'{e} poss\'{i}vel diferenciar adi\c{c}\~{o}es de multiplica\c{c}\~{o}es.
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.6.} Multiplicação escalar de ponto resistente à SPA\\
+		\hline
+			\textbf{Entrada:} inteiro positivo $k = (k_{t-1}, k_{t-2}, ..., k_{1}, k_{0})$ e $P \in E(\mathbb{F}_p)$\\
+			\textbf{Saída:} $kP$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. $Q_{0} \leftarrow \infty$\\
+			02. De $i = l-1$ até $0$ faça\\
+            03. \ \ \ \ $Q_{0} = 2Q_{0}$\\
+            04. \ \ \ \ $Q_{1} = Q_{0} + P$\\
+            05. \ \ \ \ $Q_{0} = Q_{k_{i}}$\\
+            06. Retorne $Q_{0}$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.8\textwidth]{spa2.jpg}
+	\caption{Consumo de pot\^{e}ncia durante cálculo de $kP$ \cite{940321}.}
+	\label{fig:Fig7}
+\end{figure}
+
+\subsection{Análise diferencial de potência sobre ECDSA}
+Ainda que o Algoritmo 1.6 tenha sido adotado, podemos aplicar um DPA sobre o processo de ECDSA. 
+
+Determinada uma vari\'{a}vel $V$ cujo valor influencie o consumo de pot\^{e}ncia e uma fun\c{c}\~{a}o de sele\c{c}\~{a}o $f$ tal que $V = f(k', m)$ o advers\'{a}rio coleta milhares de \textit{power traces}, estima o tamanho que a porção $k'$ ocupa na chave privada e separa os dados coletados em dois grupos de acordo com o valor previsto de $V$.
+
+No algoritmo de multiplicacao de pontos da curva el\'{i}ptica (Algoritmo 1.6), suponha que Eve colete \textit{power traces} durante os cálculos $kP_{1} , kP_{2} , ..., kP_{r}$ . Como $P_{1} , P_{2} , ..., P_{r}$ s\~{a}o p\'{u}blicos, ele precisa determinar apenas $k$.
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+	    \hline
+		    \   & $Q_{0}$  & $Q_{0}$ & $k_{t-1}$ & $Q_{0} \leftarrow Q_{k_{t-1}}$\\
+	    \hline
+	        $1$ & $\infty$ &     $P$ &       $1$ & $P$\\
+	    \hline
+		    $2$ & ... & ... & ... & ...\\
+	    \hline
+		    $3$ & ... & ... & ...& ... \\
+	    \hline
+		    ... & ... & ... & ...& ... \\
+	    \hline
+    \end{tabular}
+
+    Tabela 1.2. $k = (1, k_{t-2}, k_{t-3}, ..., k_{1}, k_{0})$.
+\end{center}
+
+Dado $Q_{0} = \infty$, o passo 2.1 \'{e} trivial e pode ser disting\"{u}ir da de uma opera\c{c}\~{a}o n\~{a}o trivial
+atrav\'{e}s do power trace, logo o advers\'{a}rio pode facilmente identificar o bit mais a esquerda cujo valor e 1. Tomando $k_{t-1}= 1$, na segunda itera\c{c}\~{a}o do algoritmo temos que $Q_{0} = 2P$ (se $k_{t-2} = 0$) ou $Q_{0} = 3P$ (se $k_{t-2} = 1$).
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+	    \hline
+		    \   & $Q_{0}$  & $Q_{0}$ & $k_{t-1}$ & $Q_{0} \leftarrow Q_{k_{t-1}}$\\
+	    \hline
+	        $1$ & $\infty$ &     $P$ &       $1$ & $P$\\
+	    \hline
+		    $2$ & $2P$ & $4P$ & $\color{blue}{?}$ & $\color{blue}{?}$ \\
+	    \hline
+		    $3$ & ... & ... & ...& ... \\
+	    \hline
+		    ... & ... & ... & ...& ... \\
+	    \hline
+    \end{tabular}
+
+    Tabela 1.3. $k = (1, k_{t-2}, k_{t-3}, ..., k_{1}, k_{0})$.
+\end{center}
+
+Conseq\"{u}entemente, na terceira itera\c{c}\~{a}o, o valor $4P$ ser computado apenas se $k_{t-2} = 0$. Definindo $k' = k_{t-2}$ e $m = P_{i}$ ($i$-\'{e}simo bit do ponto $4P = (4P_{1} , 4P_{2} , ..., 4P_{i} , ..., 4P_{r} , )$), a fun\c{c}\~{a}o seletora calcula o valor do bit $4P_{i}$.
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+	    \hline
+		    \   & $Q_{0}$  & $Q_{0}$ & $k_{t-1}$ & $Q_{0} \leftarrow Q_{k_{t-1}}$\\
+	    \hline
+	        $1$ & $\infty$ &     $P$ &       $1$ & $P$\\
+	    \hline
+		    $2$ & $2P$ & $4P$ & $\color{red}{0}$ & $2P$ \\
+	    \hline
+		    $3$ & $\color{red}{4P}$ & $6P$ & ...& ... \\
+	    \hline
+		    ... & ... & ... & ...& ... \\
+	    \hline
+    \end{tabular}
+
+    Tabela 1.4. $k = (1, \color{red}{0}$$,\ $$k_{t-3}, ..., k_{1}, k_{0})$.
+\end{center}
+
+Se o gr\'{a}fico do consumo de pot\^{e}ncia da fun\c{c}\~{a}o apresentar picos, ent\~{a}o $k_{t-2} = 0$, caso contr\'{a}rio $k_{t-2} = 1$.
+Esse processo \'{e} repetido at\'{e} todos os bits de $k$ serem determinados \cite{940321}.
+
+\subsubsection*{Medidas preventivas}
+
+Se a curva el\'{i}ptica for gerada sobre um $\mathbb{F}_{p}$ de caracter\'{i}stica superior a 3, podemos usar um sistema misto de representa\c{c}\~{a}o de coordenadas no qual $P$ seja representado em um sistema de coordenadas afins, enquanto $Q_{0}$ e $Q_{1}$ são representados em coordenadas jacobianas \cite{940321}.
+
+Se $P = (x,y)$ no sistema afim, ap\'{o}s a primeira atribui\c{c}\~{a}o $Q_{1} \leftarrow P$ teríamos $ Q_{1} = (x : y : 1)$. Ent\~{a}o, $Q_{1}$ seria aleatorizado com $(\lambda^{2}x, \lambda^{3}y, \lambda)$ e o algoritmo procederia como o usual. Desse modo o advers\'{a}rio estaria impedido de realizar predi\c{c}\~{o}es baseadas no valor de um bit espec\'{i}fico $4P_{i}$ em sistemas de coordenadas jacobianas aleatorizadas.
+
+\subsection{An\'{a}lise eletromagn\'{e}tica de um PDA Java}
+
+Bibliotecas de seguran\c{c}a das API Java SE e Java ME prov\^{e}em mecanismos de seguran\c{c}a (criptografia, controle de acesso, autenticidade, etc.) usualmente utilizados em algoritmos e protocolos \cite{599797}.  Quantidades crescentes de aplicativos baseadas nessa tecnologia s\~{a}o utilizados em dispositivos m\'{o}veis como celulares e PDAs. Portanto, \'{e} necess\'{a}rio garantir que esses \textit{softwares} sejam resistentes a ataques por canais secund\'{a}rios.
+
+O estudo a seguir \cite{1376812} mostra a viabilidade de um ataque eletromagn\'{e}tico em um PDA que possui uma implementa\c{c}\~{a}o em Java do algoritmo AES. Os passos desse m\'{e}todo de ataque pode ser visto na Figura ~\ref{fig:Fig_em_method}
+
+\subsubsection*{Aquisi\c{c}\~{a}o dos sinais EM de todo o programa}
+
+O primeiro passo consiste em capturar conjuntos de sinais eletromagn\'{e}ticos do dispositivo enquanto ele executa um algoritmo criptogr\'{a}fico, sendo um conjunto de sinais denominado \textit{frame} ou \textit{trace}. Para a obten\c{c}\~{a}o dos \textit{frames}, a unidade de processamento foi exposta e ligada a um dispositivo de captura, que envia os sinais para um pr\'{e}-amplificador antes de serem lidos por um oscilosc\'{o}pio.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{em_method.jpg}
+	\caption{Metodologia de caracteriza\c{c}\~{a}o (a) e ataque (b) do PDA \cite{1376812}.}
+	\label{fig:Fig_em_method}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.5\textwidth]{em_capture.jpg}
+	\caption{Equipamentos utilizados para captura.}
+	\label{fig:Fig_em_capture}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.6\textwidth]{em_interruption.jpg}
+	\caption{Emiss\~{a}o de sinais EM interrompida pelo sistema \cite{1376812}.}
+	\label{fig:Fig_em_interruption}
+\end{figure}
+
+A captura de sinais deve levar em considera\c{c}\~{a}o interfer\^{e}ncias de outros aplicativos executados concorrentemente no PDA. Em algumas capturas, existem curtos per\'{i}odos em que a atividade eletromagn\'{e}tica praticamente cessa. Eles correspondem a instantes em que o aplicativo que realiza o encriptação sofreu interrup\c{c}\~{o}es realizadas pelo sistema operacional do PDA. Tamb\'{e}m vemos longos per\'{i}odos sem atividade, correspondendo aos instantes em que a \textit{thread} do aplicativo foi colocada para dormir (\textit{sleep mode}). 
+
+\subsubsection*{Identifica\c{c}\~{a}o das rodadas}
+
+As Figuras~\ref{fig:Fig_em_10_12_rounds} (a) e (b) mostram os sinais eletromagn\'{e}ticos adquiridos para a execu\c{c}\~{a}o do AES com respectivamente 10 e 12 rodadas. Como cada rodada executa a mesma quantidade de instru\c{c}\~{o}es, ent\~{a}o podem ser percebidos longos per\'{i}odos de grande atividade eletromagn\'{e}tica (as rodadas) separadas por curtos per\'{i}odos de baixa atividade (acesso à tabela S-Box).
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{em_10_12_rounds.jpg}
+	\caption{Identifica\c{c}\~{a}o das rodadas do AES \cite{1376812}.}
+	\label{fig:Fig_em_10_12_rounds}
+\end{figure}
+
+\subsubsection*{Adquirir sinais EM da primeira rodada}
+
+Para um texto claro 128 bits, apenas o \textit{byte} mais significativo \'{e} alterado em cada uma das itera\c{c}\~{o}es do algoritmo. Tomando uma execu\c{c}\~{a}o do AES para uma chave privada $k = 92$, o quarto \textit{frame} capturado \'{e} mostrado na Figura~\ref{fig:Fig_em_acquisition}. As quatro setas presentes no gr\'{a}fico s\~{a}o denominadas grupos e numerados de 1 a 4, sendo que eles correspondem aos quatro acessos a tabela para a cria\c{c}\~{a}o de $t[0]$ (Figura~\ref{fig:Fig_aesjava}, linha 6).
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.7\textwidth]{em_acquisition2.jpg}
+	\caption{Aquisição do \textit{frame} 4 \cite{1376812}.}
+	\label{fig:Fig_em_acquisition}
+\end{figure}
+
+A Figura~\ref{fig:Fig_em_sections} mostra os quatro grupos da Figura~\ref{fig:Fig_em_acquisition} ampliados. Neles vemos 14 \'{a}reas identificadas de A a N; entretanto apenas o \textit{frame} 4 possui a regi\~{a}o N. Isso indica que a regi\~{a}o N provavelmente \'{e} uma leitura no vetor $t[\ ]$. 
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{em_sections.jpg}
+	\caption{ \cite{1376812}.}
+	\label{fig:Fig_em_sections}
+\end{figure}
+
+Como o vetor possui quatro posi\c{c}\~{o}es, o comportamento esperado no oscilosc\'{o}pio seria de 16 grupos seguidos de uma atividade magn\'{e}tica de escrita em mem\'{o}ria, assinalando o fim de uma rodada. Na Figura~\ref{fig:Fig_em_sema} (a) vemos o grupo 16 seguido das medi\c{c}\~{o}es das opera\c{c}\~{o}es $state[\ ][\ ]$ e $AddRoundKey$ assinaladas respectivamente por círculos e ret\^{a}ngulos. Em seguida, vemos na Figura~\ref{fig:Fig_em_sema} (b) o comportamento descrito at\'{e} agora se repetindo, indicando o in\'{i}cio da segunda rodada.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.8\textwidth]{em_sema.jpg}
+	\caption{Identifica\c{c}\~{a}o do t\'{e}rmino da primeira rodada (a) e in\'{i}cio da segunda rodada (b) \cite{1376812}.}
+	\label{fig:Fig_em_sema}
+\end{figure}
+
+\subsubsection*{Identificar e extrair regi\~{a}o de ataque na primeira rodada via \textit{Code Truncation}}
+
+Uma vez identificado o \textit{frame} da primeira rodada, primeiramente as regi\~{o}es de ataques devem ser extraídas de cada \textit{frame} automaticamente. Os autores desenvolveram um programa de reconhecimento de padr\~{o}es \cite{russel:ai} capaz de extrair e alinhar as regi\~{o}es de ataque de cada \textit{frame}. Primeiramente o \textit{software} aplica a fun\c{c}\~{a}o $V^{*}(t)$ em cada \textit{frame}, tal que:
+
+	\begin{align}\notag
+		V^{*}(t) = \left\{\begin{array}{rc}
+		1 &\mbox{se} \quad \vert V(t) \vert \geqslant 0.04V\\
+		0 &\mbox{se} \quad \vert V(t) \vert < 0.04V\\
+		\end{array}\right.
+	\end{align}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.6\textwidth]{em_thresholding.jpg}
+	\caption{Aquisi\c{c}\~{a}o do \textit{frame} 4 (a) e \textit{thresholding} (b) para optAES truncado \cite{1376812}.}
+	\label{fig:Fig_em_thresholding}
+\end{figure}
+
+
+Para ilustrar o limiar, ao inv\'{e}s da captura de \'{e} realizada sobre uma implementa\c{c}\~{a}o que o advers\'{a}rio tem acesso. Nela utilizamos uma vers\~{a}o \textit{truncada} do AES, i.e. o programa utiliza a fun\c{c}\~{a}o $optAEStrunc$ que realiza acesso apenas à regi\~{a}o $t[0]$. As figuras ~\ref{fig:Fig_em_thresholding} (a) e ~\ref{fig:Fig_em_thresholding} (b) correspondem respectivamente a um \textit{frame} de execu\c{c}\~{a}o dessa vers\~{a}o e ao \textit{thresholding} do mesmo.
+
+Ap\'{o}s o \textit{thresholding}, a regi\~{a}o de acesso $t[0]$ \'{e} extraída para realiza\c{c}\~{a}o do ataque. O \textit{thresholding} \'{e} transformado em regi\~{o}es de grande atividade (regi\~{o}es escuras) e regi\~{o}es de baixa atividade (longos per\'{i}odos de voltagens nulas).  Na regi\~{a}o de interesse $t[0]$ existem diversos valores de tens\~{a}o 0 e 1 misturados. A maior quantidade de zeros cont\'{i}guos nessa regi\~{a}o determina o limitante inferior do \textit{par\^{a}metro de toler\^{a}ncia}. A menor quantidade de zeros antes e depois da regi\~{a}o de interesse definem o limitante superior do \textit{par\^{a}metro de toler\^{a}ncia}. O \textit{par\^{a}metro de toler\^{a}ncia} \'{e} um conjunto entre esses dois limitantes. O \textit{frame} de 0 e 1 \'{e} transformado em regi\~{o}es
+de baixa e alta atividade usando esse \textit{par\^{a}metro de toler\^{a}ncia} (nesse caso 1000).
+
+\begin{center}
+    \begin{tabular}{|r|r|r|r|r|}
+	    \hline
+		    \  Index & Inicio  & Fim & Limitante inferior & Limitante superior\\
+		 \hline
+			\ 01 &  5265 &  6434 & 1169 & 1973\\
+		 \hline
+			\ 02 &  8371 &  9558 & 1187 & 1217\\
+		 \hline
+			\ 03 & 10775 & 13242 & 2467 & 6773\\
+		 \hline
+			\ 04 & 20015 & 22020 & 2005 & 3222\\
+		 \hline
+			\ 05 & 25242 & 27866 & 2624 & 1069\\
+		 \hline
+			\ 06 & 28935 & 31578 & 2643 & 1061\\
+		 \hline
+			\ 07 & 32639 & 35472 & 2833 &  515\\
+		 \hline
+			\ 08 & 35987 & 37742 & 1755 &  327\\
+		 \hline
+			\ 09 & 38069 & 39270 & 1201 &  513\\
+		 \hline
+			\ 10 & 39783 & 42751 & 2968 &  514\\
+		 \hline
+			\ 11 & 43265 & 45770 & 2505 &  907\\
+		 \hline	
+    \end{tabular}
+
+    Tabela 1.5. \textit{Thresholded Zeros} para aquisição do frame.
+\end{center}
+
+Após a realização do truncamento, os valores de tensão são separados do seguinte modo:
+\begin{itemize}
+	\item Uma região contígua com 1000 ou mais zeros no \textit{frame} é transformada em uma região de baixa atividade.
+	\item Regiões com menos do que 1000 zeros são inseridas em regiões vizinhas de alta atividade.
+\end{itemize}
+
+Desse modo ao inv\'{e}s de serem analisados 50 mil valores individuais de tens\~{a}o, o programa de reconhecimento de padrões passa a lidar com 10 regi\~{o}es de baixa/alta atividade, como mostra a tabela 1.5. Para os dados obtidos na caracteriza\c{c}\~{a}o, requer-se que:
+
+\begin{itemize}
+	\item Regi\~{o}es de baixa atividade n\~{a}o possuem de 2000 à 3000 amostragens.
+	\item Regi\~{o}es de alta atividade vizinhas às de baixa atividade tenham no m\'{i}nimo 5000 amostragens.
+\end{itemize}
+
+Seguindo os crit\'{e}rios acima o terceiro \'{i}ndice da Tabela 1.5 \'{e} o escolhido.
+
+\subsubsection*{Escolher uma \'{a}rea est\'{a}tica dentro regi\~{a}o de ataque}
+
+Testes para o \textit{software} s\~{a}o desenvolvidos para extrair a regi\~{a}o de alta atividade de interesse, a qual \'{e} identificada pelo limitante inferior imediatamente antes da mesma e de largura do acesso $t[0]$ de interesse. Neste exemplo, regi\~{o}es de baixa atividade possuem no m\'{i}nimo 2000 tens\~{o}es nulas e no m\'{a}ximo 3000, com as regi\~{o}es de alta atividade de no m\'{i}nimo 5000 termos. Se mais de uma regi\~{a}o atende a esse crit\'{e}rio, o advers\'{a}rio deve escolher a primeira detectada. A se\c{c}\~{a}o N foi escolhida para a an\'{a}lise por ocorrer no final de um \textit{frame} (logo era uma forte candidata a corresponder, a uma regi\~{a}o de leitura da tabela). 
+
+Foram analisados 32 frames e cada um deles foi dividido em $Areas_{i}$. Alguns deles n\~{a}o apresentaram todas as \'{a}reas; entretanto, a \'{a}rea N est\'{a} presente em todos os frames sendo por isso escolhida para o ataque.
+
+\subsubsection*{Sexta etapa}
+
+Foram extra\'{i}das 100 amostras imediatamente ao fim da regi\~{a}o de ataque e 100 amostras depois da regi\~{a}o de ataque, criando apenas 300 amostras por frame. A Figura ~\ref{fig:Fig_em_caracterizacao} (a) corresponde aos sinais extra\'{i}dos da regi\~{a}o N.
+
+\subsubsection*{Frequency-based DEMA}
+
+Finalmente, \'{e} aplicado o \textit{frequency-based DEMA} sobre o conjunto de sinais extra\'{i}dos da se\c{c}\~{a}o N, revelando corretamente a chave secreta (Figura ~\ref{fig:Fig_em_caracterizacao} (b)).  Baseado nesse ataque sobre a caracteriza\c{c}\~{a}o do PDA (que utilizou a vers\~{a}o truncada do AES), o advers\'{a}rio pode aplicar o ataque sobre a vers\~{a}o real do algoritmo criptogr\'{a}fico. 
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.7\textwidth]{em_caracterizacao2.jpg}
+	\caption{\'{A}rea de ataque extradia do \textit{frame} 3 (a) e resultado da DFA aplicado sobre a os sinais obtidos da vers\~{a}o truncada do AES Rijndael (b) \cite{1376812}.}
+	\label{fig:Fig_em_caracterizacao}
+\end{figure}
+
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.7\textwidth]{em_aes.jpg}
+	\caption{Implementa\c{c}\~{a}o em Java do AES \cite{1376812}.}
+	\label{fig:Fig_aesjava}
+\end{figure}
+
+\subsubsection*{Ataque real sobre o PDA}
+
+As sete etapas anteriores (Figura~\ref{fig:Fig_em_method}(a)) nos fornece\c{c}am o m\'{e}todo adequado para identificar a regi\~{a}o N como o alvo. Agora o adversário pode aplicar sobre a vers\~{a}o completa do AES similiarmente, por\'{e}m analisando apenas os sinais da regi\~{a}o de ataque (Figura ~\ref{fig:Fig_em_method} (b) ). A versão completa do AES executada novamente utilizando como chaves secretas  $92$, $227$, $61$ e $158$.
+
+A Figura ~\ref{fig:Fig_em_final} (a) mostra o quarto \textit{frame} capturado na execu\c{c}\~{a}o para $k = 2$. Nela existem quatro regi\~{o}es similares aos acessos de mem\'{o}ria ($t[0], t[1], t[3]$ e $t[4]$) da vers\~{a}o truncada do AES. Por fim a Figura~\ref{fig:Fig_em_chaves} apresenta as quatro chaves mencionadas corretamente recuperadas.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.5\textwidth]{em_final.jpg}
+	\caption{Aquisi\c{c}\~{a}o do \textit{frame} 4 (a) e cálculo do limiar dos \textit{frames} (b)
+	\cite{1376812}.}
+	\label{fig:Fig_em_final}
+\end{figure}
+
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.7\textwidth]{em_chaves.jpg}
+	\caption{Chaves secetas obtidas \cite{1376812}.}
+	\label{fig:Fig_em_chaves}
+\end{figure}
+
+\subsection{Análise de falhas sobre multiplicação de pontos em curvas elípticas}
+
+Trabalhos anteriores \cite{1063746} mostraram como seria possível através de falhas no Algoritmo 1.7 gerar uma curva falha $\tilde{E}$ de modo que o cálculo de $\tilde{Q} \leftarrow k\tilde{P}$ fornecesse informações que viabilizassem a resolução do problema do logaritmo discreto e permitisse a descoberta de $k$. Contudo a medida de defesa contra esse ataque, mostrada no Algoritmo 1.8, consiste simplesmente em verificar se o resultado obtido permanece na curva $E(\mathbb{F})$. A seguir será apresentado uma metodologia desenvolvida por Johannes Bl\"{o}mer, Martin Otto e Jean-Pierre Seifert em 2006 \cite{Blomer04signchange} na qual é possível inserir falhas de modo que o resultado de $Q \leftarrow kP$ pertença a $E(\mathbb{F})$ e a chave privada $k$ seja descoberta indutivamente.
+
+\subsubsection*{Fundamentos}
+
+Os resultados apresentados por \cite{Boneh01onthe} foram utilizados pelo autor \cite{Blomer04signchange} para definir a quantidade de multiplicações errôneas necessárias para determinar corretamente a chave privada da seguinte forma:
+
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.7.} Multiplicação de pontos de curvas elípticas 2\\
+		\hline
+			\textbf{Entrada:} Inteiro positivo $k$, $P \in E(\mathbb{F})$\\
+			\textbf{Saída:} $kP$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			01. Calcular $(k_{n-1}, k_{n-2}, ..., k_{0}) \leftarrow NAF_{2}(k)$\\
+			02. $Q_{n} \leftarrow \infty$\\
+			03. De $i \leftarrow n-1$ até $0$ faça\\
+			04. \ \ \ \ $Q_{i}' \leftarrow 2Q_{i+1}$\\
+			05. \ \ \ \ Se $k_{i} = 1$ então\\
+			06. \ \ \ \ \ \ \ \ $Q_{i} \leftarrow Q_{i}' + P$\\
+			07. \ \ \ \ Ou se $k_{i} = -1$ então\\
+			08. \ \ \ \ \ \ \ \ $Q_{i} \leftarrow Q_{i}' - P$\\
+			09. \ \ \ \ Senão\\
+			10. \ \ \ \ \ \ \ \ $Q_{i} \leftarrow Q_{i}'$\\
+			11. Se $Q_{0} \notin E(\mathbb{F})$ então\\
+			12. \ \ \ \ $Q_{0} \leftarrow \infty$\\
+			13. Retornar $Q_{0}$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+Seja uma curva elíptica $E(\mathbb{F}_{p})$, para $p > 3$ primo. em um sistema de coordenadas projetivas $(x:y:z ) \in \mathbb{F}_{p}^{3}$:
+
+\begin{equation}
+    y^{3}z \equiv x^{3} + Axz^{2} + Bz^{3} \bmod p, \notag
+\end{equation}
+
+\noindent sendo o ponto no infinito representado por $(0:1:0)$. Definidas as operações de adição e multiplicação de ponto para essa equação, temos:
+
+\begin{equation}
+    \forall P,Q \in E(\mathbb{F}_{p}) : P + Q = (0:1:0) \rightarrow P = (x:y:z)\ e\ Q = -P = (x:-y:z). \notag
+\end{equation}
+
+No Algoritmo 1.8 vemos que a multiplicação $Q = kP$ ocorre da esquerda para a direita. Os valores parcialmente calculados de $Q$ até a iteração $i$ são armazenados em uma variável temporária $Q_{i}'$. Desse modo, em uma execução correta da multiplicação escalar, o valor de $Q$ expresso em função de $Q_{i}'$ é dado por:
+
+\begin{equation}
+	Q = 2^{i}Q_{i} + \sum_{j=0}^{i-1}2^{j}k_{j}P\notag
+\end{equation}
+
+\subsubsection*{Metodologia do ataque}
+
+Estudos realizados por \cite{BDL01} constataram o seguinte fato:
+
+Seja $x = (x_{1}, x_{2}, ..., x_{n-1}, x_{n}) \in \left\lbrace 0,1\right\rbrace$e $M$ um conjunto composto por todos os intervalos contíguos de comprimento $m < n$ em $x$. Se escolhermos $c = \frac{n}{m}\log 2n$ bits de $x$ de forma aleatória, então a chance de cada intervalo de $M$ conter ao menos um determinado bit é de, no mínimo, 50\%. Desse modo a chave privada $k$ será recuperada em pedaços de $r \in [1, m]$ bits, sendo $2^{m} < \#E(\mathbb{F}_{p})$ a quantidade de trabalho \textit{offline} aceitável.
+
+O ataque consiste em causar uma falha em uma das iterações da multiplicação de modo a transformar o valor de $Q_{i}'$ para $-Q_{i}' \in E(\mathbb{F}_{p})$. Nesse sistemas de coordenadas essa tarefa se tornaria mais simples, uma vez que seria necessário apenas trocar o sinal da coordenada $y$ do ponto. Se o adversário for capaz de causar uma falha tal que o durante uma iteração $i$ do Algoritmo 1.7 o valor do bit $k_{i}$ seja invertido, ao final do cálculo seria obtido um ponto expresso por
+
+\begin{equation}
+	\tilde{Q} = -2^{i}Q_{i}' + \sum_{j=0}^{i}k_{j}2^{j}P\notag
+\end{equation}
+	
+	Logo, isolando $Q_{i}'$ na expressões que definem $Q$ e $\tilde{Q}$ temos:
+
+\begin{equation}
+	\tilde{Q} = -Q + 2L_{i}(k)\notag
+\end{equation}
+
+\noindent sendo o termo $L_{i}(k) = \sum_{j=0}^{i}k_{j}2^{j}P$ é a parte desconhecida da equação.
+
+O Algoritmo 1.8 descreve os passos para a recuperação da chave privada $k$ de comprimento $n$. Supomos que $(k_{0}, k_{1}, ..., k_{s}, x_{s+1}, ..., x_{s+r})$ corresponde a um $NAF(k)$ válido e $k_{n-1} = 1$, sendo a parcela $(k_{0}, k_{1}, ..., k_{s})$ correspondente aos $s+1$ bits menos significativos da chave conhecidos. O termo \textit{Zero Block Failures} indica o fato de que erros em blocos de zeros não serão detectáveis como erros dentro de um bloco.  Para qualquer $s$, se $k_{s} = k_{s+1} = ... = k_{s+r} = 0$ então $L_{s}(k) = L_{s}(k) = ... = L_{s}(k) = 0$. Como $\tilde{Q_{1}} = -Q + 2L_{s}$ e $\tilde{Q_{2}} = -Q + 2L_{s+r}$ teriam o mesmo valor, seria impossivel determinar a quantidade de zeros caso eles ocorressem na parte caudal de um bloco; portanto, para que o algoritmo opere corretamente, os padrões testados precisam terminar com $\pm1$.
+
+\begin{center}
+    \begin{tabular}{l}
+        \hline
+            \textbf{Algoritmo 1.8.} Ataque de mudança se sinal sobre $Q_{i}'$.\\
+    	\hline    	
+			\textbf{Entrada:} $P \in E(\mathbb{F})$, $k = (k_{n-1}, k_{n-2}, ..., k_{0}) \in [1, ord(P)]$\\
+			\textbf{Sa\'{i}da:} $kP \in E(\mathbb{F})$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+01.\# FASE 1: Criar saídas falhas\\
+02.  $c \leftarrow \frac{c}{m}\log 2n$\\
+03.  Criar $c$ saídas falhas induzindo SCF em $Q_{i}'$\\
+04.  Coletar um conjunto $S$ de diversas saídas falhas $\tilde{Q}$\\
+05.\# FASE 2: Recuperação indutiva dos bits da chave secreta\\
+06.  $s \leftarrow -1$\\
+07.  Enquanto $s < n - 1$ faça\\
+08.  \ \ \ \ $L \leftarrow 2\sum_{j=0}^{s}k_{j}2^{j}P$\\
+09.  \ \ \ \ Para todos os comprimentos $r \in [1,m]$ faça\\
+10.  \ \ \ \ \ \ \ \ Para todos NAF $x = (x_{s+1}, x_{s+2},..., x_{s+r})$ com $x_{s+r} \neq 0$ faça\\
+11.\ \ \ \ \ \ \ \ \ \ \ \ \# Calcular e verificar o candidato $T_{x}$\\
+12. \ \ \ \ \ \ \ \ \ \ \ \ $T_{x} \leftarrow L + 2\sum_{j=s+1}^{s+r}x_{j}2^{j}P$\\
+13. \ \ \ \ \ \ \ \ \ \ \ \ Para todos os $\tilde{Q} \in S$ faça\\
+14.  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ se $T_{x} - \tilde{Q} = Q$ então\\
+15.  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $(k_{s+1}, k_{s+1}, ..., k_{s+r}) \leftarrow (x_{s+1}, x_{s+2}, ..., x_{s+r})$\\
+16.  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $s \leftarrow s + r$\\
+17.\# Caso \textit{Zero Block Failure}\\
+18.  Se nenhum dos candidatos satisfizer a fase de verificação, então\\
+19.  \ \ \ \ assumir que $k_{s+1} \leftarrow 0$ e $s \leftarrow s+1$\\
+20.  Se $Q =kP$ então\\
+21.  \ \ \ \ retornar $k$\\
+22.  Senão\\
+23.  \ \ \ \ retornar \textit{falha}\\
+		\hline
+    \end{tabular}
+\end{center}
+
+\subsubsection*{Medidas preventivas}
+
+A medida preventiva aplicada em estudos anteriores \cite{BDL01} de falhas sobre curvas elípticas não se mostrou eficiente para esse ataque. Tomando a curva elíptica original $E(\mathbb{F}_{p})$, a nova medida preventiva proposta consiste em escolher um número primo pequeno $t$ ($60$ a $80$ bits) para formar uma segunda curva elíptica $E(\mathbb{F}_{t})$ que será combinada com a original a fim de criar uma terceira curva $E(\mathbb{F}_{pt})$ sobre a qual serão calculadas as multiplicações de ponto. Os parâmetros $A_{pt}$ e $B_{pt}$ da curva elíptica no sistema de coordenadas projetivas serão definidos como:
+
+\begin{align}\notag
+	A_{pt} &\equiv A_{p} \pmod p\\ \notag
+	A_{pt} &\equiv A_{t}\  \pmod t\\ \notag
+	B_{pt} &\equiv B_{p} \pmod p\\ \notag
+	B_{pt} &\equiv B_{t} \ \pmod t\\ \notag
+\end{align}
+
+\noindent e podem ser facilmente computados com auxílio do Teorema Chinês do Resto. Analogamente, um novo ponto gerador $P_{pt}$, sendo que a ordem de $P_{t} \in E(\mathbb{F}_{t})$ suficientemente larga para evitar ataques de força bruta. No Algoritmo 1.9 vemos que, caso ocorra uma falha no cálculo de $R \leftarrow kP_{pt}$, a congruência $R \equiv kP_{t}\pmod t$ deixaria de ser válida e portando seria detectada uma falha de execução.
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.9.} Multiplicação de pontos de curvas elípticas com tratamento de falhas\\
+		\hline
+			\textbf{Entrada:} Inteiro positivo $k$, $P \in E(\mathbb{F})$\\
+			\textbf{Saída:} $kP$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			\# Inicialização antes da execução do algoritmo\\
+			01. Escolher um primo $t$ e uma curva elíptica $E(\mathbb{F}_{t})$\\
+			02. Determinar os parâmetros da curva combinada $E(F_{pt})$\\
+			\\
+			\# Multiplicação\\
+			03. $Q \leftarrow kP_{pt} \in E(\mathbb{F}_{pt})$\ \ \ \ \# Usando Algoritmo 1.7\\
+			04. $R \leftarrow kP_{t}\ \in E(\mathbb{F}_{t})$\ \ \ \ \ \ \ \# Usando Algoritmo 1.7\\
+			05. Se $R \neq Q \pmod t$ então\\
+			06. \ \ \ \ retornar \textit{falha}\\
+			07. Senão\\
+			08. \ \ \ \ retornar $Q \in E(\mathbb{F}_{p})$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\subsection{Análise de falhas sobre assinatura digital RSA}
+
+Como mostrado, anteriormente, a exponencia\c{c}\~{a}o modular \'{e} a base do funcionamento do RSA sendo oss algoritmos que a implementam os mais diversos. O expoente pode ser percorrido da direita para a esquerda ou vice-versa, a redu\c{c}\~{a}o modular pode ser simples ou utilizar o Teorema Chin\^{e}s do Resto \cite{2401855} para torn\'{a}-la mais r\'{a}pida, etc. O ataque aqui demonstrado foi aplicado sobre uma implementa\c{c}\~{a}o percorrendo o expoente da esquerda para a direita (Algoritmo 1.10).
+
+\begin{center}
+	\begin{tabular}{l}
+		\hline
+			\textbf{Algoritmo 1.10.} Exponenciação binária da esquerda para a direita\\
+		\hline
+			\textbf{Entrada:} Inteiros positivos $m, e$ e $n$\\
+			\textbf{Saída:} $m^e \bmod n$\\
+			\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \\
+			\# $e = (e_{t-1}, e_{t-2}, ..., e_{1}, e_{0})$\\
+			01. $r \leftarrow 1$\\
+			02. De $i \leftarrow t-1$ até $0$ faça\\
+			03. \ \ \ \ $r \leftarrow r^{2} \bmod n$\\
+			04. \ \ \ \ Se $e_{i} = 1$ então\\
+			05. \ \ \ \ \ \ \ \ $r \leftarrow r \times m \bmod n$\\
+			06. Retornar $r$\\
+		\hline
+	\end{tabular}
+\end{center}
+
+Sabendo que o dispositivo embarcado utiliza a implementa\c{c}\~{a}o mencionada, o advers\'{a}rio pode for\c{c}\'{a}-lo saltar um \textit{squaring} (linha 3 do Algoritmo 1.10) atrav\'{e}s de inje\c{c}\~{a}o de falhas. Como n\~{a}o \'{e} poss\'{i}vel saber o exato instante em que a instru\c{c}\~{a}o est\'{a} sendo executada, outras instru\c{c}\~{o}es podem sofrer um salto indesejado. Assim, o advers\'{a}rio tamb\'{e}m deve ser capaz de verificar se a instru\c{c}\~{a}o correta n\~{a}o foi executada.
+
+Seja a assinatura do resumo $H(m)$ de uma mensagem $m$ dada por
+
+\begin{align}
+	Sig \leftarrow \prod_{i = 0}^{t} H(m)^{d_{i} \times 2^{i}}  \bmod n\notag
+\end{align}	
+
+Para $k \in \left\lbrace 0, 1, ..., t\right\rbrace$, ao saltarmos a $(t-k+1)$-\'{e}sima itera\c{c}\~{a}o da exponencia\c{c}\~{a}o modular, obteremos uma assinatura falha $Sig_{k}$ tal que:
+
+\begin{align}
+	Sig_{k} \leftarrow \prod_{i = k+1}^{t} H(m)^{d_{i} \times 2^{i-1}} \times \prod_{i = 0}^{k} H(m)^{d_{i} \times 2^{i}} \mod n\notag
+\end{align}
+
+Como as falhas podem ser injetadas em qualquer ponto da execu\c{c}\~{a}o do programa, o advers\'{a}rio precisa:
+\begin{enumerate}
+	\item Determinar um caso base de assinatura falha facilmente verific\'{a}vel.
+	\item Que a verifica\c{c}\~{a}o da falha informe ao menos um bit da chave secreta.
+	\item Que a assinatura falha seja obtida saltando apenas um \textit{squaring}.
+	\item O caso base seja o passo inicial de um m\'{e}todo indutivo.
+\end{enumerate}
+
+Sendo que o expoente $d$ \'{e} percorrido da esquerda para a direita, a \'{u}nica assinatura que poderia ser verificada dessa maneira \'{e} $Sig_{0}$ , pois:
+
+\begin{align}
+	Sig \leftarrow \left\{\begin{array}{rc}
+	(Sig_{0})^{2} \mod n &\mbox{se}\quad d_{0} = 0,\\
+	H(m)^{-1} \times (Sig_{0})^{2} \mod n &\mbox{se}\quad d_{0} = 1
+	\end{array}\right.\notag
+\end{align}
+
+Assim, Eve injetaria falhas at\'{e} que em algum momento uma das igualdades acima fosse verificada e automaticamente revelando o valor 
+correto de $d_{0}$. O processo de inje\c{c}\~{a}o de saltos seria reiniciado at\'{e} que todos os $t, t-1, t-2, ..., 1$ bits restantes fossem indutivamente revelados atrav\'{e}s da verifica\c{c}\~{a}o da seguinte igualdade:
+
+\begin{align}
+	Sig_{k} \leftarrow \left\{\begin{array}{rc}
+	Sig_{k-1} \mod n &\mbox{se}\quad d_{k} = 0\\
+	H(m)^{2^{k-1}} \times Sig_{k-1} \mod n &\mbox{se}\quad d_{k} = 1
+	\end{array}\right. \notag
+\end{align}
+
+\subsubsection*{Medidas preventivas}
+
+Medidas preventivas contra ataques por inser\c{c}\~{o}es usualmente consistem
+em inserir c\'{o}digos nas implementa\c{c}\~{o}es a fim de inviabiliz\'{a}-los. Por\'{e}m,
+uma análise mais profunda revela que a inje\c{c}\~{a}o de falhas pode ser estendida contra
+as pr\'{o}prias medidas de defesa. Conseq\"{u}entemente n\~{a}o foi encontrada na literatura nenhuma medida 
+de defesa que n\~{a}o pudesse ser invalidada.
+
+
+\subsubsection*{Inser\c{c}\~{a}o de C\'{o}digo Redundante}
+
+A medida de defesa contra análise simples de potência consistia em inserir
+opera\c{c}\~{o}es de modo que a multiplica\c{c}\~{a}o deixasse de ser relacionada ao valor de um bit
+do expoente, passando a ser sempre executada de maneira redundante. Mas o foco desse
+ataque \'{e} a sa\'{i}da gerada pelo dispositivo; ent\~{a}o, essa medida de defesa em nada o afeta.
+
+\subsubsection*{Ofuscar a mensagem}
+
+Vamos supor, por exemplo, que a entidade assine o pr\'{o}prio texto claro e n\~{a}o seu resumo. Primeiramente, a entidade escolhe valores aleat\'{o}rios $r_{0}$ e $r_{i}$ tais que $\ r_{0}^{-1} = r_{i}^{d} \bmod n$. Ent\~{a}o, ele ofusca a mensagem do seguinte modo:
+
+\begin{align}\notag
+	\mu =& m \times r_{i} \bmod n,\\ \notag
+	c =& \mu^{d} \bmod n. \notag
+\end{align}
+
+Por\'{e}m, a inser\c{c}\~{a}o de falhas poderia ser estendia ao cálculo de $\mu$, impedindo que a mensagem fosse multiplicada por $r_{i}$ e permitindo que o ataque descrito previamente fosse aplicado com sucesso.
+
+\subsubsection*{Ofuscar o expoente}
+
+Aqui a entidade usa para cifrar uma mensagem o expoente $d' = d + r \times \phi(n)$, sendo $r$ aleat\'{o}rio. Aqui existem duas possibilidades:
+
+\begin{itemize}
+	\item O valor de $d'$ \'{e} armazenado no mesmo registrador que $d$; ent\~{a}o, basta inserir uma falha e impedir que a atribui\c{c}\~{a}o $d' \leftarrow d$ ocorra.
+	\item Se $d'$ \'{e} armazenado em um registrador diferente, o advers\'{a}rio pode impedir que o c\'{a}lculo $r \times \phi(n)$ seja realizado, fazendo com que $d' \leftarrow d$.
+\end{itemize}
+
+\subsection{An\'{a}lise de tempo sobre preditores de saltos}
+
+Atualmente ataques utilizando canais secund\'{a}rios de informa\c{c}\~{a}o tipicamente s\~{a}o aplicados sobre dispositivos embarcados. Essas plataformas s\~{a}o os principais alvos de ACS porque, comparadas com processadores convencionais, seu hardware de f\'{a}cil acesso permite que as medidas de  suas grandezas f\'{i}sicas sejam efetuadas silenciosamente, i.e. em sua maioria n\~{a}o s\~{a}o invasivas e n\~{a}o interferem na execu\c{c}\~{a}o dos algoritmos criptogr\'{a}ficos. Acreditava-se que a an\'{a}lise de tempo n\~{a}o era t\~{a}o amea\c{c}adora quanto os outros ataques porque a dura\c{c}\~{a}o das instru\c{c}\~{o}es tanto em smart cards como computadores convencionais s\~{a}o da ordem de nanosegundos. Logo seria invi\'{a}vel estabelecer uma rela\c{c}\~{a}o de tempo entre operando e operador.
+
+A arquitetura intr\'{i}nseca aos processadores convencionais (PowerPC, Cell, Intel x86, ARM, etc.) impede medi\c{c}\~{o}es desse car\'{a}ter. \'{E} imposs\'{i}vel acessarmos n\~{a}o invasivamente valores contidos em registradores ou mem\'{o}ria cache referentes a programas distintos que est\~{a}o sendo executados em CPUs convencionais. Al\'{e}m disso essas plataformas executam sistemas operacionais capazes de executar programas concorrentemente (Windows, Linux, Symbian, PalmOS, etc.) e a troca de contexto desses processos faz com que valores imprecisos sejam obtidos nas medi\c{c}\~{o}es. Poucos trabalhos até 2003 \cite{1251354} abordaram ACS como um risco real contra essas plataformas de modo que essas eram tidas como seguras a essa categoria de ataque.
+
+\subsubsection*{Paralelismo de instru\c{c}\~{o}es e preditor de saltos}
+
+Desde o surgimento dos primeiros processadores modernos, diversas t\'{e}cnicas de constru\c{c}\~{a}o foram criadas visando rápidas melhorias no desempenho dos processadores. Na d\'{e}cada de 1960 surgiram processadores com est\'{a}gios distintos de execu\c{c}\~{a}o (pipelined processors); na d\'{e}cada de 1980 processadores capazes de executar instru\c{c}\~{o}es especulativamente \cite{493986}. Essas t\'{e}cnicas, que exploram paralalelismo de instru\c{c}\~{o}es (ILP ou \textit{Instruction Level Parallelism}) necessitam de mecanismos sofisticados de predi\c{c}\~{a}o dos saltos (in)condicionais executados durantes a execu\c{c}\~{a}o do programa, de modo que a unidade de processamento praticamente n\~{a}o fique ociosa.
+
+Estudos recentes \cite{Jean-Pierre06predictingsecret, 1266999} demonstraram que seria possível, através de medições das diferenças dos tempos de acertos e erros das unidades de predição de salto, determinar a chave privada de um sistema RSA utilizando um processo espião. Apesar desse ataque consistir de análises de tempo, ele também é denominado \textit{Branch Prediction Analysis}, uma vez que o tempo é utilizado para inferir valores do preditor de saltos.
+
+\subsubsection*{Unidade de predi\c{c}\~{a}o de saltos}
+
+As instru\c{c}\~{o}es que comp\~{o}em o c\'{o}digo bin\'{a}rio de um programa execut\'{a}vel podem consumir diferentes quantidades de ciclos de \textit{clock} de acordo com suas respectivas complexidades. Como no decorrer do fluxo de programas podem existir diversas depend\^{e}ncias entre as instru\c{c}\~{o}es executadas, existe a possibilidade de que valores necess\'{a}rios para a execu\c{c}\~{a}o de uma determinada instru\c{c}\~{a}o ainda n\~{a}o tenham sido calculados.
+
+Quando a instru\c{c}\~{a}o depende um salto condicional, ent\~{a}o essa situa\c{c}\~{a}o \'{e} denominada \textit{control hazard}. Para que o processador n\~{a}o permane\c{c}a ocioso at\'{e} que o fluxo do programa seja definido, durante o per\'{i}odo de decis\~{a}o ele especula qual dever\'{a} ser a pr\'{o}xima instru\c{c}\~{a}o executada. Se a predi\c{c}\~{a}o se mostrar correta (\textit{hit}) o fluxo do programa prossegue sem degrada\c{c}\~{a}o de desempenho; caso a predi\c{c}\~{a}o se mostre incorreta (\textit{miss prediction}), o \textit{pipeline} deve ser esvaziado e a instru\c{c}\~{a}o correta tomada. Observe que uma \textit{miss prediction} acarreta em uma penalidade de ciclos de \textit{clock} que \'{e} proporcional à quantidade de est\'{a}gios do \textit{pipeline}.
+
+Quando a CPU determina um salto como tomado, ela deve buscar a instru\c{c}\~{a}o do endere\c{c}o alvo do salto na mem\'{o}ria e entreg\'{a}-la a unidade de execu\c{c}\~{a}o. Para tornar o processo mais eficiente, a CPU mant\'{e}m um registro dos saltos executados anteriormente no BTB (\textit{Branch Target Buffer}). Observe que o tamanho do BTB é limitado; logo, alguns endere\c{c}os armazenados precisam ser expulsos para que novos endere\c{c}os sejam armazenados.
+O preditor tamb\'{e}m possui uma parte denominada BHR (\textit{Branch History Registers}) respons\'{a}vel por gravar a hist\'{o}ria dos registradores usados globalmente e localmente pelo programa. \cite{Jean-Pierre06predictingsecret}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{automato.jpg}
+	\caption{Aut\^{o}mato finito descreve o comportamento do preditor de saltos \cite{493986}.}
+	\label{fig:Fig_automato}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.5\textwidth]{btu.jpg}
+	\caption{Unidade de predi\c{c}\~{a}o de saltos \cite{Jean-Pierre06predictingsecret}.}
+	\label{fig:Fig_btu}
+\end{figure}
+
+\subsubsection*{Medi\c{c}\~{a}o direta de tempo}
+
+A m\'{a}quina de estados que descreve as poss\'{i}veis decis\~{o}es da BTU possui um n\'{u}mero finito de estados; logo, o algoritmo que a descreve \'{e} determin\'{i}stico. O advers\'{a}rio pode assumir que a implementa\c{c}\~{a}o do RSA utilizou S\&M (\textit{Square-and-Multiply exponentiation algorithm}) e MM (\textit{Montgomery Multiplication algorithm} \cite{940321, 1197338}) e o BTU possui um aut\^{o}mato finito de apenas dois estados: salto tomado ou n\~{a}o tomado.
+
+Seja $d$ a chave privada, vamos supor que o advers\'{a}rio conhece seus $i$ primeiros bits e est\'{a} tentando determinar $d_{i}$. Para qualquer mensagem $m$, o advers\'{a}rio pode simular as primeiras $i$ itera\c{c}\~{o}es e obter um resultado intermedi\'{a}rio que ser\'{a} a entrada da $(i+1)-$\textit{\'{e}sima} itera\c{c}\~{a}o. Ent\~{a}o ele gera quatro conjuntos distintos tais que:
+\begin{align} \notag
+	M_{1} = \left\lbrace m\ \vert\ d_{i} = 1 \rightarrow m\ causa\ missprediction\ durante\ MM\right\rbrace \\ \notag
+	M_{2} = \left\lbrace m\ \vert\ d_{i} = 1 \rightarrow m\ causa\ hit\ durante\ MM\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \right\rbrace \\ \notag
+	M_{3} = \left\lbrace m\ \vert\ d_{i} = 0 \rightarrow m\ causa\ missprediction\ durante\ MM\right\rbrace \\ \notag
+	M_{4} = \left\lbrace m\ \vert\ d_{i} = 0 \rightarrow m\ causa\ hit\ durante\ MM\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \right\rbrace \\ \notag
+\end{align}
+O advers\'{a}rio calcula o tempo m\'{e}dio de execu\c{c}\~{a}o na multiplica\c{c}\~{a}o de Montgomery em cada conjunto $M_{i}$. Sendo $d_{i} = t, t \in \left\lbrace 0,1\right\rbrace $, a diferen\c{c}a dos tempos m\'{e}dios de execu\c{c}\~{a}o para o mesmo valor correto $t$ ser\~{a}o muito mais significativas do que a obtida dos outros dois conjuntos, pois, para o valor incorreto, os valores de tempo de cada multiplica\c{c}\~{a}o ter\~{a}o um caracter aleat\'{o}rio. Esse \'{e} o mesmo processo estat\'{i}stico da an\'{a}lise diferencial de pot\^{e}ncia. Portanto, se a diferen\c{c}a entre os tempos m\'{e}dios de $M_{1}$ e $M_{2}$ for muito mais significativa do que $M_{3}$ e $M_{4}$, ent\~{a}o o palpite correto \'{e} $d_{i} = 1$, e $d_{i} = 0$ caso contr\'{a}rio. 
+
+Nesse ataque o advers\'{a}rio precisa saber de antem\~{a}o o estado do BPU antes do algoritmo de decriptação ser iniciado. Uma possibilidade de simples implementa\c{c}\~{a}o, por\'{e}m menos eficiente, seria realizar a an\'{a}lise supondo cada um dos quatro estados iniciais. A segunda abordagem consiste em for\c{c}ar o estado inicial do BPU de modo que nenhum endere\c{c}o de salto esteja no BTB. Essa abordagem ser\'{a} fundamentalmente a mesma utilizada em todos os ataques de predi\c{c}\~{a}o de salto listados a seguir.
+
+\subsubsection*{For\c{c}ando BPU \`{a} mesma predi\c{c}\~{a}o assincronamente}
+
+Unidades de processamento que permitem execu\c{c}\~{a}o concorrente de processos (SMT ou \textit{Simultaneous Multi-Threading} \cite{Silberschatz2004}) permitem que um advers\'{a}rio execute um processo espi\~{a}o simultaneamente ao programa de encriptação. Dessa forma, o advers\'{a}rio pode fazer com que o valor previsto dos saltos do encriptador nunca estejam no BTB; conseq\"{u}entemente, sempre ocorrer\'{a} um \textit{misspredictio}n quando o resultado correto, segundo a previs\~{a}o, seria que o salto fosse tomado. Comparado ao processo anterior, a an\'{a}lise diferencial seria similiar exceto pelo fato de que $d_{i} = 1$ em caso de \textit{hit} e $d_{i} = 0$ em caso de \textit{missprediction} durante o c\'{a}lculo de $m^{2} \bmod N$.
+
+O processo espi\~{a}o remover do BTB o endereço alvo de salto dos seguintes modos:
+\begin{enumerate}
+	\item (\textit{Total Eviction Method}: todas as entradas do BTB são expulsas.
+	\item (\textit{Partial Eviction Method}): um conjunto de entradas do BTB é expulso.
+	\item (\textit{Single Eviction Method}): apenas endere\c{c}o de interesse é expulso da tabela.
+\end{enumerate}
+
+Obviamente o primeiro m\'{e}todo \'{e} o de mais simples implementa\c{c}\~{a}o (assumindo que sejamos capazes de esvaziar todo o BTB entre duas itera\c{c}\~{o}es da exponencia\c{c}\~{a}o). O diferencial desse ataque \'{e} o advers\'{a}rio n\~{a}o ter que saber detalhes de implementa\c{c}\~{a}o da BPU para ser capaz de criar o processo espi\~{a}o e determinar quais s\~{a}o os bits da chave secreta.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=.7\textwidth]{totaleviction.jpg}
+	\caption{Resultados pr\'{a}ticos do \textit{Total Eviction Method} \cite{Jean-Pierre06predictingsecret}.}
+	\label{fig:Fig_totaleviction}
+\end{figure}
+
+       Esse ataque foi aplicado sobre uma implementação do RSA em OpenSSL versão 0.9.7, rodando sob uma workstation RedHat 3. Foram gerados 10 milhões de blocos de mensagens aleatórias e chaves aleatórias de $512$ bits. As mensagens foram encriptadas e separadas segundo os critérios acima, sendo assumido como tomado o salto do próximo bit desconhecido.
+       
+Na Figura ~\ref{fig:Fig_totaleviction} (a), o eixo $x$ corresponde aos bits do expoente de 2 até 511, sendo que cada coordenada $x_{i}$ apresenta os valores das médias das separações correta e a média das separações aleatórias, denotadas respectivamente por $\mu_{Y_{i}}$ e $\mu_{X_{i}}$. Analizando todos os pares $(\mu_{Y_{i}}, \mu_{X_{i}})$, o adversário verifica  qual deles teve a diferença mais significativa (Figura ~\ref{fig:Fig_totaleviction} (b)) e utiliza seus respectivos desvios padrões para determinar o desvio da diferença das médias
+
+\begin{align}\notag
+    \mu_{Z} &= \mu_{Y} - \mu_{X} = 58.91 - 1.24 = 57.67\\\notag
+    \sigma_{Z} &= \sqrt{ \sigma_{Y}^{2} + \sigma_{X}^{2}} = \sqrt{ 62.58^{2} - (34.78)^{2}} = 71.60\\ \notag
+\end{align}
+
+Sempre que o adversário encontrar $Z > 0$, ele irá supor que seu palpite do valor do bit foi correta. O grau de certeza que o adversário pode ter nessas decisões pode ser medido através da probabilidade:
+
+\begin{align}
+    Pr[Z > 0] = \phi(\dfrac{0 - \mu_{Z}}{\sigma_{Z}}) = \phi(-0.805) = 0.79\notag
+\end{align}
+
+Portanto, a probabilidade de suas decisões estarem corretas para essas medidas é de quase 80\%.
+
+\subsubsection*{For\c{c}ando BPU \`{a} mesma predi\c{c}\~{a}o sincronamente}
+
+No ataque anterior, o advers\'{a}rio n\~{a}o precisava sincronizar o processo espi\~{a}o com a execu\c{c}\~{a}o do programa de decriptação. Entretanto se ele fosse capaz de faz\^{e}-lo, poderia esvaziar o BTB apenas no passo imediatamente anterior a \textit{i\'{e}sima} exponencia\c{c}\~{a}o, tornando o processo muito mais eficiente. O advers\'{a}rio irá supor que a implementa\c{c}\~{a}o do RSA utiliza o algoritmo S\&M e se a senten\c{c}a $if$ foi usada como alvo do salto condicional. 
+
+O advers\'{a}rio executa o RSA para textos claros conhecidos e mede o tempo de execu\c{c}\~{a}o. Em seguida reexecuta o programa aplicando imediatamente antes da \textit{i\'{e}sima} execu\c{c}\~{a}o uma \textit{single eviction} no BTB. Como o salto \'{e} tomado ou n\~{a}o de acordo com o valor de $d_{i}$, se ele o supor como tomado, ent\~{a}o ocorrer\'{a} um \textit{missprediction} e ser\'{a} percebido um atraso na segunda execu\c{c}\~{a}o. Logo, o advers\'{a}rio pode determinar todos os bits da chave secreta $d$ analisando o tempo de execu\c{c}\~{a}o de cada itera\c{c}\~{a}o.
+
+\subsubsection*{Trace-Driven Attack}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{10_ateh_10mil.jpg}
+	\caption{Conectando os \textit{misses} induzidos no BTB e a diferença de tempo do S\&M \cite{Jean-Pierre06predictingsecret}.}
+	\label{fig:Fig_10_ateh_10mil}
+\end{figure}
+
+Todas as abordagens anteriores foram focadas na medi\c{c}\~{a}o dos tempos gastos pelos saltos do programa de decriptação, enquanto esta abordagem monitora os saltos do programa espi\~{a}o. Iremos supor que inicialmente a CPU prev\^{e} o salto do decriptador como n\~{a}o tomado. 
+
+O advers\'{a}rio inicia seu programa antes do \textit{software} criptogr\'{a}fico e continuamente executa saltos de modo que eles ocupem as mesmas entradas no BTB. Quando ocorrer um \textit{missprediction} de um salto que deveria ser tomado, a CPU ir\'{a} expulsar uma das entradas no BTB utilizadas pelo programa espi\~{a}o e inserir o endereço de salto do decriptador. Conseqüentemente, ao retomar a execução, o programa espião também sofrerá um \textit{missprediction}. Dessa maneira, o advers\'{a}rio \'{e} capaz de determinar quando o BTB foi modificado pelo decriptador e determinar os bits da chave.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{10_ateh_10mil_ampliado.jpg}
+	\caption{Diferenças entre S\&M entre iterações 89 e 104 para 10 mil medições \cite{Jean-Pierre06predictingsecret}.}
+	\label{fig:Fig_10_ateh_10mil_ampliado}
+\end{figure}
+
+As medi\c{c}\~{o}es de tempo foram realizadas no in\'{i}cio da multiplica\c{c}\~{a}o de Montgomery, fornecendo o tempo de apenas uma das opera\c{c}\~{o}es realizadas (\textit{squaring} ou multiplica\c{c}\~{a}o). Sendo $N$ a quantidade de amostras por $bit$ da chave, quanto maior seu valor mais discrepantes ser\~{a}os as diferen\c{c}as entre as duas opera\c{c}\~{o}es, como mostra a Figura~\ref{fig:Fig_10_ateh_10mil} com amostragens $100$ a $100000$. No caso de $N = 10000$, tamb\'{e}m \'{e} poss\'{i}vel ver na Figura~\ref{fig:Fig_10_ateh_10mil_ampliado} os bits $d_{i} \in \left\lbrace d_{89}, d_{104}\right\rbrace$, demonstrando como a partir desse ponto \'{e} trivial determinar a chave secreta.
+
+\subsubsection*{Melhorando o Trace-Driven Attack}
+
+Nos quatro ataques sobre o BPU mostrados at\'{e} agora foi utilizada an\'{a}lise diferencial das medi\c{c}\~{o}es de tempo, sendo necess\'{a}rias quantidades enormes de amostragens a fim de determinar o correto valor da chave. Um segundo estudo do autor \cite{1266999} demonstrou ser poss\'{i}vel diminuir bruscamente a quantidade de amostragens necess\'{a}rias no ataque \textit{Trace-Driven}. 
+
+O ataque \'{e} realizado como um \textit{Trace-Driven} usual, onde o programa espi\~{a}o executa uma seq\"{u}\^{e}ncia fixa de $t$ saltos para expulsar os endere\c{c}os alvos do BTB. Os autores perceberam que, de acordo com a arquitetura do processador, existe um $t$ \'{o}timo que pode ser experimentalmente determinado.  Aumentando a dura\c{c}\~{a}o de ciclos dos saltos do processo espi\~{a}o, as diferen\c{c}as de tempo tornam-se muitos mais significativas e facilmente percept\'{i}veis com uma amostragem muito menor, economizando de mil a 10 mil amostragens em relação ao \textit{Trace-Drive Attack} original. Isso permite que a chave seja determinada com apenas \textit{uma} medição por bit. A Figura~\ref{fig:Fig_sbpa} mostra como a precisão dos valores dos bits obtidos são influenciados pela quantidade de ciclos gastos pelo saltos do programa espião de modo que quanto maior a duração do salto, maior é a precisão dos valores dos bits.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=1\textwidth]{sbpa.jpg}
+	\caption{\textit{Simple branch prediction} \cite{1266999}.}
+	\label{fig:Fig_sbpa}
+\end{figure}
+
+Por\'{e}m n\~{a}o pode ser esquecido que os aplicativos est\~{a}o sendo executados em um sistema SMT, logo a troca e contexto dos processos pode eventualmente afetar as medi\c{c}\~{o}es de tempo. Sob uma \'{o}tica estat\'{i}stica, se o advsers\'{a}rio executar algumas amostragens, algumas delas ser\~{a}o menos afetadas do que outras pela concorr\^{e}ncia dos aplicativos.
+
+A Figura~\ref{fig:Fig_sbpa} mostra quatro de dez amostragens independentes. Tomando a melhor amostragem, o advers\'{a}rio foi capaz de revelar corretamente 508 dos 512 bits da chave secreta. 
+
+%\subsubsection*{Medidas preventivas}
+
+\section{Considera\c{c}\~{o}es finais}\label{Consideracoes}
+
+Algoritmos criptográficos são conhecidos pela elevada quantidade de processamento em sua execução,. Assim, um dos grandes desafios em defesas contra ACS puramente via \textit{software} é conseguir prover a garantia do não-vazamento de informações sem comprometer a eficiência dos aplicativos. Deve-se ficar atento para que as próprias medidas não possibilitem um vazamento de informação. Além disso, a implementação do algoritmo de defesa deve passar por uma análise criteriosa, principalmente no que se refere a otimizações realizadas pelo compilador. No caso de código reduntante, ele poderia ser simplesmte removido e esse fato passar despercebido pelo desenvolvedor.
+
+Existe hoje uma grande proliferação de dispositivos embarcados ao nosso redor sem que nos demos conta. Eles estão presentes em automóveis, televisores, celular, cartões de bancos, PDAs, etc. e cada vez mais são capazes de comunicarem-se entre si. A principal questão à qual devemos ficar atentos não é o tanto fato de eles muitas vezes trocarem de dados sigilosos, mas sim o nosso desconhecimento sobre essas transações. Com a acessibilidade do hardware e baixo custo de equipamentos necessários para efetuar certos tipos ataque, é fundamental que medidas elaboradas de segurança criptográfica sejam utilizadas a fim de garantir a segurança e privacidade de nossos dados.
+
+Possivelmente, devido ao fato das publicações utilizadas em nossa pesquisa serem recentes, não foram encontradas medidas eficazes de proteção contra os ataques de análise de preditor de salto, análise de falhas aplicadas na assinatura de RSA e análise eletromagnética do PDA Java. O ataque ao preditor de saltos mostrou-se o mais nocivo porque, ao contrário de todos os outros apresentados, não seria necessário acesso físico ao dispositivo de hardware para executá-lo. Entretanto não sabemos se ele seria aplicável às plataformas com múltiplas unidades de processamento \cite{citeulike:5426692}, pois não há garantias de que o processo invasor sempre seja alocado no mesmo núcleo de processamento que o processo criptográfico.
+
+\bibliographystyle{sample-bookchapter}
+\bibliography{sample-bookchapter}
+
+\end{document}
